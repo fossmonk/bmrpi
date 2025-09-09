@@ -1,0 +1,7 @@
+.vscode
+*.elf
+*.img
+boot/kernel8.img
+!boot
+lib/*
+obj/*
