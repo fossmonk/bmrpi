@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include "maths.h"
-#include "mmio.h"
+#include "io.h"
 #include "gfx.h"
 #include "led.h"
 
@@ -15,8 +15,11 @@ uint32_t width, height, pitch;
 uint8_t *FB;
 
 int32_t mbox_call(uint8_t ch) {
+    // Get the physical address of the mailbox buffer
+    uint32_t mbox_phys = (uint32_t)(uintptr_t)mbox;
+
     // message address + channel number
-    uint32_t r = (uint32_t)(((uintptr_t)(&(mbox)) & ~0xF) | (ch & 0xF));
+    uint32_t r = ((mbox_phys & 0x3FFFFFFF) | (ch & 0xF));
 
     // wait until mailbox is not full
     while (mmio_read(MBOX_STATUS) & MBOX_FULL);
@@ -80,18 +83,19 @@ void gfx_init() {
         pitch = mbox[24];
         width = mbox[5];
         height = mbox[6];
+        uint32_t fb_bus_addr = mbox[19];
         // The framebuffer address is returned in the 'allocate buffer' tag response
-        FB = (uint8_t *)(uintptr_t)(mbox[19] & 0x3FFFFFFF);
+        FB = (uint8_t *)(uintptr_t)(fb_bus_addr + 0x40000000);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                ((uint32_t*)FB)[y * (pitch / 4) + x] = 0x00FF00FF;  // Magenta, ARGB
+            }
+        }
     } else {
         FB = NULL;
         led_blink_test(10000);
         while(1);
-    }
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            ((uint32_t*)FB)[y * (pitch / 4) + x] = 0x00FF00FF;  // Magenta, ARGB
-        }
     }
 }
 

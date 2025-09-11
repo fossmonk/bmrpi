@@ -3,14 +3,6 @@ OUTPUT_ARCH(aarch64)
 
 ENTRY(_start)
 
-/* Memory map of the Raspberry Pi 4 */
-MEMORY
-{
-    /* DDR (Dynamic Random Access Memory) is the main system memory.
-     * The address is specific to the Raspberry Pi 4. */
-    DDR (rwx) : ORIGIN = 0x00000000, LENGTH = 2048M
-}
-
 SECTIONS
 {
     /* The kernel must be loaded at physical address 0x80000 */

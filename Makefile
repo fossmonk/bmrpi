@@ -3,31 +3,37 @@ AS=aarch64-none-elf-as.exe
 AR=aarch64-none-elf-ar.exe
 LD=aarch64-none-elf-ld.exe
 OBJCOPY=aarch64-none-elf-objcopy.exe
+DEBUG=0
 
 CP=copy
 RM=del /Q
 RMDIR=rmdir /s /q
 CC_OPTS=-nostdlib -nostartfiles -ffreestanding -march=armv8-a+fp+simd
+LD_OPTS=
 AR_OPTS=rcs
+
+ifeq ($(DEBUG), 1)
+	CC_OPTS+= -g -O0
+	LD_OPTS+= -g -O0
+endif
 
 all: test
 
 libs:
-	@$(CC) $(CC_OPTS) -c src/uart.c -o obj/uart.o
+	@$(CC) $(CC_OPTS) -c src/io.c -o obj/io.o
 	@$(CC) $(CC_OPTS) -c src/led.c -o obj/led.o
 	@$(CC) $(CC_OPTS) -c src/gfx.c -o obj/gfx.o
 	@$(CC) $(CC_OPTS) -c src/maths.c -o obj/maths.o
-	@$(AR) $(AR_OPTS) lib/libhw.a obj/maths.o obj/gfx.o obj/led.o obj/uart.o
+	@$(AR) $(AR_OPTS) lib/libhw.a obj/maths.o obj/gfx.o obj/led.o obj/io.o
 
 test: libs
 	@$(AS) -c startup/boot.S -o obj/boot.o
 	@$(CC) $(CC_OPTS) -c test.c -o obj/test.o
-	@$(LD) -T linker.ld -o test.elf obj/test.o obj/boot.o lib/libhw.a
+	@$(LD) $(LD_OPTS) -T linker.ld -o test.elf obj/test.o obj/boot.o lib/libhw.a -Map test.map
 	@$(OBJCOPY) test.elf -O binary test.img
 
 flash:
-	@$(CP) *.img boot\kernel8.img
-	@$(CP) boot\*.* S:\
+	@$(CP) *.img D:\kernel8.img
 
 clean:
 	@$(RM) obj\* lib\* *.img *.elf

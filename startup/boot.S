@@ -7,15 +7,16 @@
 .set PAGE_SIZE,  0x1000  // 4 KB page
 
 _start:
-    // Set up the stack pointer to a safe, high memory address.
+    // read cpu id, stop slave cores
+    mrs x1, mpidr_el1
+    and x1, x1, #3
+    cbz x1, 2f
+    wfe
+    b halt
+2:  // Set up the stack pointer to a safe, high memory address.
     // In a bare-metal environment, the stack is the first thing you must configure.
     ldr x0, =_stack_start
     mov sp, x0
-
-    // Enable the MMU and caching.
-    // Set SCTLR_EL1.
-    ldr x0, =(1 << 2) | (1 << 12) | (1 << 19) // Example: D-cache, I-cache, and MMU
-    msr SCTLR_EL1, x0
 
     // Initialize the vector base address register (VBAR_EL1).
     // This is crucial for handling exceptions and interrupts.

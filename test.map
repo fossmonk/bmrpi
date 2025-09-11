@@ -1,0 +1,188 @@
+Archive member included to satisfy reference by file (symbol)
+
+lib/libhw.a(gfx.o)            obj/test.o (gfx_init)
+lib/libhw.a(led.o)            lib/libhw.a(gfx.o) (led_blink_test)
+lib/libhw.a(io.o)             obj/test.o (uart_init)
+lib/libhw.a(maths.o)          lib/libhw.a(gfx.o) (sincos)
+
+Merging program properties
+
+
+Discarded input sections
+
+ .note.gnu.property
+                0x0000000000000000        0x0 lib/libhw.a(maths.o)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+                0x0000000000080000                . = 0x80000
+
+.text           0x0000000000080000     0x1e10
+ *(.text.boot)
+ .text.boot     0x0000000000080000     0x1070 obj/boot.o
+                0x0000000000080000                _start
+                0x0000000000081000                vector_table
+ *(.text*)
+ .text          0x0000000000081070       0x60 obj/test.o
+                0x0000000000081070                kernel_main
+ .text          0x00000000000810d0        0x0 obj/boot.o
+ .text          0x00000000000810d0      0x5a4 lib/libhw.a(gfx.o)
+                0x0000000000081140                mbox_call
+                0x00000000000811e4                gfx_init
+                0x00000000000814c0                gfx_draw_pixel
+                0x0000000000081578                gfx_draw_circle
+ .text          0x0000000000081674      0x154 lib/libhw.a(led.o)
+                0x00000000000816e4                led_init
+                0x0000000000081730                led_on
+                0x0000000000081750                led_off
+                0x0000000000081774                led_blink_test
+ .text          0x00000000000817c8      0x3e4 lib/libhw.a(io.o)
+                0x0000000000081814                gpio_call
+                0x000000000008191c                gpio_set
+                0x0000000000081950                gpio_clear
+                0x0000000000081984                gpio_pull
+                0x00000000000819b8                gpio_function
+                0x00000000000819e8                gpio_use_as_alt5
+                0x0000000000081a18                uart_init
+                0x0000000000081adc                uart_putc
+                0x0000000000081b24                uart_getc
+                0x0000000000081b60                uart_print
+ .text          0x0000000000081bac      0x264 lib/libhw.a(maths.o)
+                0x0000000000081bac                cordic
+                0x0000000000081cd8                sincos
+
+.iplt           0x0000000000081e10        0x0
+ .iplt          0x0000000000081e10        0x0 obj/test.o
+
+.rodata         0x0000000000081e10       0x40
+ *(.rodata*)
+ .rodata        0x0000000000081e10        0xf obj/test.o
+ *fill*         0x0000000000081e1f        0x1 
+ .rodata        0x0000000000081e20       0x10 lib/libhw.a(gfx.o)
+ .rodata        0x0000000000081e30       0x20 lib/libhw.a(maths.o)
+
+.rela.dyn       0x0000000000081e50        0x0
+ .rela.iplt     0x0000000000081e50        0x0 obj/test.o
+ .rela.text.boot
+                0x0000000000081e50        0x0 obj/test.o
+
+.data           0x0000000000081e50       0x80
+ *(.data*)
+ .data          0x0000000000081e50        0x0 obj/test.o
+ .data          0x0000000000081e50        0x0 obj/boot.o
+ .data          0x0000000000081e50        0x0 lib/libhw.a(gfx.o)
+ .data          0x0000000000081e50        0x0 lib/libhw.a(led.o)
+ .data          0x0000000000081e50        0x0 lib/libhw.a(io.o)
+ .data          0x0000000000081e50       0x80 lib/libhw.a(maths.o)
+                0x0000000000081e50                cordic_ctab
+
+.igot.plt       0x0000000000081ed0        0x0
+ .igot.plt      0x0000000000081ed0        0x0 obj/test.o
+                0x0000000000082000                . = ALIGN (0x1000)
+
+.vector_table
+ *(.vector_table)
+                0x0000000000082000                __bss_start = .
+
+.bss            0x0000000000082000       0xa8
+ *(.bss*)
+ .bss           0x0000000000082000        0x0 obj/test.o
+ .bss           0x0000000000082000        0x0 obj/boot.o
+ .bss           0x0000000000082000       0xa8 lib/libhw.a(gfx.o)
+                0x0000000000082000                mbox
+                0x0000000000082090                width
+                0x0000000000082094                height
+                0x0000000000082098                pitch
+                0x00000000000820a0                FB
+ .bss           0x00000000000820a8        0x0 lib/libhw.a(led.o)
+ .bss           0x00000000000820a8        0x0 lib/libhw.a(io.o)
+ .bss           0x00000000000820a8        0x0 lib/libhw.a(maths.o)
+ *(COMMON)
+                0x00000000000820a8                __bss_end = .
+                0x0000000000083000                . = ALIGN (0x1000)
+                0x0000000000083000                _stack_start = .
+
+.stack          0x0000000000083000     0x4000
+                0x0000000000087000                . = (. + 0x4000)
+ *fill*         0x0000000000083000     0x4000 
+                0x0000000000087000                _stack_end = .
+LOAD obj/test.o
+LOAD obj/boot.o
+LOAD lib/libhw.a
+OUTPUT(test.elf elf64-littleaarch64)
+LOAD linker stubs
+
+.debug_info     0x0000000000000000      0xbe6
+ .debug_info    0x0000000000000000      0x12f obj/test.o
+ .debug_info    0x000000000000012f      0x3b6 lib/libhw.a(gfx.o)
+ .debug_info    0x00000000000004e5      0x1b5 lib/libhw.a(led.o)
+ .debug_info    0x000000000000069a      0x373 lib/libhw.a(io.o)
+ .debug_info    0x0000000000000a0d      0x1d9 lib/libhw.a(maths.o)
+
+.debug_abbrev   0x0000000000000000      0x559
+ .debug_abbrev  0x0000000000000000       0xc2 obj/test.o
+ .debug_abbrev  0x00000000000000c2      0x1a7 lib/libhw.a(gfx.o)
+ .debug_abbrev  0x0000000000000269       0xf1 lib/libhw.a(led.o)
+ .debug_abbrev  0x000000000000035a      0x12b lib/libhw.a(io.o)
+ .debug_abbrev  0x0000000000000485       0xd4 lib/libhw.a(maths.o)
+
+.debug_aranges  0x0000000000000000       0xf0
+ .debug_aranges
+                0x0000000000000000       0x30 obj/test.o
+ .debug_aranges
+                0x0000000000000030       0x30 lib/libhw.a(gfx.o)
+ .debug_aranges
+                0x0000000000000060       0x30 lib/libhw.a(led.o)
+ .debug_aranges
+                0x0000000000000090       0x30 lib/libhw.a(io.o)
+ .debug_aranges
+                0x00000000000000c0       0x30 lib/libhw.a(maths.o)
+
+.debug_line     0x0000000000000000      0x5ad
+ .debug_line    0x0000000000000000       0x8a obj/test.o
+ .debug_line    0x000000000000008a      0x1f9 lib/libhw.a(gfx.o)
+ .debug_line    0x0000000000000283       0xbc lib/libhw.a(led.o)
+ .debug_line    0x000000000000033f      0x174 lib/libhw.a(io.o)
+ .debug_line    0x00000000000004b3       0xfa lib/libhw.a(maths.o)
+
+.debug_str      0x0000000000000000      0x2a9
+ .debug_str     0x0000000000000000      0x2a9 obj/test.o
+                                        0x13a (size before relaxing)
+ .debug_str     0x00000000000002a9      0x1bf lib/libhw.a(gfx.o)
+ .debug_str     0x00000000000002a9      0x147 lib/libhw.a(led.o)
+ .debug_str     0x00000000000002a9      0x1d1 lib/libhw.a(io.o)
+ .debug_str     0x00000000000002a9       0xee lib/libhw.a(maths.o)
+
+.debug_line_str
+                0x0000000000000000       0xd4
+ .debug_line_str
+                0x0000000000000000       0xd4 obj/test.o
+                                         0xaf (size before relaxing)
+ .debug_line_str
+                0x00000000000000d4       0xbd lib/libhw.a(gfx.o)
+ .debug_line_str
+                0x00000000000000d4       0xaf lib/libhw.a(led.o)
+ .debug_line_str
+                0x00000000000000d4       0xa7 lib/libhw.a(io.o)
+ .debug_line_str
+                0x00000000000000d4       0xab lib/libhw.a(maths.o)
+
+.comment        0x0000000000000000       0x46
+ .comment       0x0000000000000000       0x46 obj/test.o
+                                         0x47 (size before relaxing)
+ .comment       0x0000000000000046       0x47 lib/libhw.a(gfx.o)
+ .comment       0x0000000000000046       0x47 lib/libhw.a(led.o)
+ .comment       0x0000000000000046       0x47 lib/libhw.a(io.o)
+ .comment       0x0000000000000046       0x47 lib/libhw.a(maths.o)
+
+.debug_frame    0x0000000000000000      0x480
+ .debug_frame   0x0000000000000000       0x30 obj/test.o
+ .debug_frame   0x0000000000000030      0x108 lib/libhw.a(gfx.o)
+ .debug_frame   0x0000000000000138      0x110 lib/libhw.a(led.o)
+ .debug_frame   0x0000000000000248      0x1e0 lib/libhw.a(io.o)
+ .debug_frame   0x0000000000000428       0x58 lib/libhw.a(maths.o)
