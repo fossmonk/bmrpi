@@ -1,6 +1,9 @@
 .vscode
 *.elf
 *.img
+*.map
+*.ttf
+utils/*.h
 boot/kernel8.img
 !boot
 lib/*

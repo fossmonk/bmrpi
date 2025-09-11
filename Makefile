@@ -23,17 +23,19 @@ libs:
 	@$(CC) $(CC_OPTS) -c src/io.c -o obj/io.o
 	@$(CC) $(CC_OPTS) -c src/led.c -o obj/led.o
 	@$(CC) $(CC_OPTS) -c src/gfx.c -o obj/gfx.o
+	@$(CC) $(CC_OPTS) -c src/term.c -o obj/term.o
 	@$(CC) $(CC_OPTS) -c src/maths.c -o obj/maths.o
-	@$(AR) $(AR_OPTS) lib/libhw.a obj/maths.o obj/gfx.o obj/led.o obj/io.o
+	@$(AR) $(AR_OPTS) lib/libhw.a obj/maths.o obj/gfx.o obj/led.o obj/io.o obj/term.o
 
 test: libs
 	@$(AS) -c startup/boot.S -o obj/boot.o
 	@$(CC) $(CC_OPTS) -c test.c -o obj/test.o
 	@$(LD) $(LD_OPTS) -T linker.ld -o test.elf obj/test.o obj/boot.o lib/libhw.a -Map test.map
 	@$(OBJCOPY) test.elf -O binary test.img
+	$(CP) test.img kernel8.img
 
 flash:
-	@$(CP) *.img D:\kernel8.img
+	@$(CP) test.img D:\kernel8.img
 
 clean:
 	@$(RM) obj\* lib\* *.img *.elf

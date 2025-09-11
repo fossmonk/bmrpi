@@ -1,55 +1,19 @@
-OUTPUT_FORMAT("elf64-littleaarch64")
-OUTPUT_ARCH(aarch64)
-
-ENTRY(_start)
-
 SECTIONS
 {
-    /* The kernel must be loaded at physical address 0x80000 */
-    . = 0x80000;
-
-    /* The .text section contains all executable code */
-    .text :
-    {
-        /* Ensure the boot-up code is at the start of the section */
-        KEEP(*(.text.boot))
-        *(.text*)
-    }
-
-    /* The .rodata section contains read-only data */
-    .rodata :
-    {
-        *(.rodata*)
-    }
-
-    /* The .data section contains initialized data */
-    .data :
-    {
-        *(.data*)
-    }
-
-    /* The vector table must be aligned to a 4KB boundary */
-    . = ALIGN(0x1000);
-    .vector_table :
-    {
-        *(.vector_table)
-    }
-
-    /* The .bss section contains uninitialized data and must be cleared at boot */
-    __bss_start = .;
-    .bss (NOLOAD) :
-    {
-        *(.bss*)
+    . = 0x80000;     /* Kernel load address for AArch64 */
+    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
+    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
+    PROVIDE(_data = .);
+    .data : { *(.data .data.* .gnu.linkonce.d*) }
+    .bss (NOLOAD) : {
+        . = ALIGN(16);
+        __bss_start = .;
+        *(.bss .bss.*)
         *(COMMON)
+        __bss_end = .;
     }
-    __bss_end = .;
+    _end = .;
 
-    /* The stack is placed at the end of the memory space */
-    . = ALIGN(0x1000);
-    _stack_start = .;
-    .stack (NOLOAD) :
-    {
-        . = . + 0x4000; /* 16KB stack size */
-    }
-    _stack_end = .;
+   /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
+__bss_size = (__bss_end - __bss_start)>>3;

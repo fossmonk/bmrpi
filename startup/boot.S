@@ -1,80 +1,30 @@
-/* boot.S - Bare-metal Raspberry Pi 4 startup (aarch64) */
+.section ".text.boot"  // Make sure the linker puts this at the start of the kernel image
 
-.section .text.boot
-.global _start
-
-.set STACK_SIZE, 0x10000 // 64 KB stack
-.set PAGE_SIZE,  0x1000  // 4 KB page
+.global _start  // Execution starts here
 
 _start:
-    // read cpu id, stop slave cores
-    mrs x1, mpidr_el1
-    and x1, x1, #3
-    cbz x1, 2f
-    wfe
-    b halt
-2:  // Set up the stack pointer to a safe, high memory address.
-    // In a bare-metal environment, the stack is the first thing you must configure.
-    ldr x0, =_stack_start
-    mov sp, x0
+    // Check processor ID is zero (executing on main core), else hang
+    mrs     x1, mpidr_el1
+    and     x1, x1, #3
+    cbz     x1, 2f
+    // We're not on the main core, so hang in an infinite wait loop
+1:  wfe
+    b       1b
+2:  // We're on the main core!
 
-    // Initialize the vector base address register (VBAR_EL1).
-    // This is crucial for handling exceptions and interrupts.
-    ldr x0, =vector_table
-    msr VBAR_EL1, x0
+    // Set stack to start below our code
+    ldr     x1, =_start
+    mov     sp, x1
 
-    // Clear the .bss section.
-    // The .bss section contains uninitialized global variables that must be zeroed out
-    // before the C code can use them.
-    ldr x1, =__bss_start
-    ldr x2, =__bss_end
+    // Clean the BSS section
+    ldr     x1, =__bss_start     // Start address
+    ldr     w2, =__bss_size      // Size of the section
+3:  cbz     w2, 4f               // Quit loop if zero
+    str     xzr, [x1], #8
+    sub     w2, w2, #1
+    cbnz    w2, 3b               // Loop if non-zero
 
-bss_clear_loop:
-    cmp x1, x2
-    b.ge bss_clear_done
-    str xzr, [x1], #8 // Store a zero value (xzr) and increment the pointer by 8 bytes
-    b bss_clear_loop
-
-bss_clear_done:
-    // Call the C entry point.
-    bl kernel_main
-
-halt:
-    // A simple endless loop to halt execution.
-    // `wfe` (Wait For Event) is a low-power instruction that stops the core until an event occurs.
-    wfe
-    b halt
-
-.align 12 // Align to 4 KB boundary
-.global vector_table
-vector_table:
-    // Exception vectors for EL1
-    // These vectors handle different types of exceptions, such as system calls,
-    // data/instruction aborts, and interrupts. Each vector should point to a handler.
-    .rept 4 // Synchronous exceptions
-        b exception_handler
-    .endr
-    .rept 4 // IRQs
-        b irq_handler
-    .endr
-    .rept 4 // FIQs
-        b fiq_handler
-    .endr
-    .rept 4 // SError
-        b serror_handler
-    .endr
-
-// Placeholder handlers
-exception_handler:
-    // Example: Print an error message and halt.
-    b halt
-
-irq_handler:
-    // Example: Acknowledge interrupt and return.
-    b irq_handler
-
-fiq_handler:
-    b fiq_handler
-
-serror_handler:
-    b serror_handler
+    // Jump to our main() routine in C (make sure it doesn't return)
+4:  bl      kernel_main
+    // In case it does return, halt the master core too
+    b       1b

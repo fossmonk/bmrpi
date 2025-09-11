@@ -87,43 +87,43 @@ void gfx_init() {
         // The framebuffer address is returned in the 'allocate buffer' tag response
         FB = (uint8_t *)(uintptr_t)(fb_bus_addr + 0x40000000);
 
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                ((uint32_t*)FB)[y * (pitch / 4) + x] = 0x00FF00FF;  // Magenta, ARGB
-            }
-        }
+        // for (int y = 0; y < height; y++) {
+        //     for (int x = 0; x < width; x++) {
+        //         ((uint32_t*)FB)[y * (pitch / 4) + x] = 0xFF00FFFF;  // CYAN, ARGB
+        //     }
+        // }
     } else {
         FB = NULL;
-        led_blink_test(10000);
         while(1);
     }
 }
 
 void gfx_draw_pixel(int32_t x, int32_t y, uint32_t color) {
-    if (!FB || x < 0 || x >= width || y >= height) return;
-    uint32_t *pixel_offset = (uint32_t *)(FB + (y * pitch) + (x * 4));
-    *pixel_offset = color;
+    uart_print("DRAWING PIXEL\r\n");
+    int32_t offset = (y * pitch) + (x * 4);
+    *((uint32_t *)(FB + offset)) = color;
 }
 
-void gfx_draw_circle(int32_t c_x, int32_t c_y, int radius) {
-    if(c_x == -1 || c_y == -1) {
-        c_x = width / 2;
-        c_y = height / 2;
-    }
-    
-    /* Circle equation: (x-x0)^2 + (y-y0)^2 = r^2
-    Parametrically, x = x0 + rcos(theta), y = y0 + rsin(theta), 0 < theta < 2PI
-    */
-    double angle = 0.0;
-    
-    while(angle < 2 * MATHS_PI) {
-        double cos, sin;
-        sincos(angle, &sin, &cos);
-        int x = c_x + (int)(radius * cos);
-        int y = c_y + (int)(radius * sin);
+void gfx_draw_line(int x1, int y1, int x2, int y2, uint32_t color)  
+{  
+    uart_print("Trying to draw line\r\n");
+    int dx, dy, p, x, y;
 
-        gfx_draw_pixel(x, y, 0xFF00FFFF); // CYAN in AARRGGBB
-        angle += 0.05;
-        delay(50000);
+    dx = x2-x1;
+    dy = y2-y1;
+    x = x1;
+    y = y1;
+    p = 2*dy-dx;
+
+    while (x < x2) {
+       if (p >= 0) {
+          gfx_draw_pixel(x, y, color);
+          y++;
+          p = p+2*dy-2*dx;
+       } else {
+          gfx_draw_pixel(x, y, color);
+          p = p + 2*dy;
+       }
+       x++;
     }
 }
