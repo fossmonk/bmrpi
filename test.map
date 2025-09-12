@@ -1,20 +1,24 @@
 Archive member included to satisfy reference by file (symbol)
 
-lib/libhw.a(gfx.o)            obj/test.o (gfx_init)
-lib/libhw.a(io.o)             obj/test.o (uart_init)
-lib/libhw.a(term.o)           obj/test.o (term_draw_str)
+lib/libhw.a(shell.o)          obj/kernel.o (shell_readline_with_echo)
+lib/libhw.a(strops.o)         obj/kernel.o (strops_cmp)
+lib/libhw.a(gfx.o)            obj/kernel.o (gfx_init)
+lib/libhw.a(io.o)             obj/kernel.o (uart_init)
+lib/libhw.a(rand.o)           obj/kernel.o (rand)
 
 Merging program properties
 
 
 Discarded input sections
 
- .comment       0x0000000000000000       0x47 obj/test.o
+ .comment       0x0000000000000000       0x47 obj/kernel.o
+ .comment       0x0000000000000000       0x47 lib/libhw.a(shell.o)
+ .comment       0x0000000000000000       0x47 lib/libhw.a(strops.o)
  .comment       0x0000000000000000       0x47 lib/libhw.a(gfx.o)
  .comment       0x0000000000000000       0x47 lib/libhw.a(io.o)
- .comment       0x0000000000000000       0x47 lib/libhw.a(term.o)
+ .comment       0x0000000000000000       0x47 lib/libhw.a(rand.o)
  .note.gnu.property
-                0x0000000000000000        0x0 lib/libhw.a(term.o)
+                0x0000000000000000        0x0 lib/libhw.a(rand.o)
 
 Memory Configuration
 
@@ -25,90 +29,127 @@ Linker script and memory map
 
                 0x0000000000080000                . = 0x80000
 
-.text           0x0000000000080000      0xc24
+.text           0x0000000000080000     0x22dc
  *(.text.boot)
  .text.boot     0x0000000000080000       0x50 obj/boot.o
                 0x0000000000080000                _start
  *(.text .text.* .gnu.linkonce.t*)
- .text          0x0000000000080050       0x58 obj/test.o
+ .text          0x0000000000080050      0x7e0 obj/kernel.o
                 0x0000000000080050                kernel_main
- .text          0x00000000000800a8        0x0 obj/boot.o
- .text          0x00000000000800a8      0x4a4 lib/libhw.a(gfx.o)
-                0x00000000000800f4                mbox_call
-                0x0000000000080198                gfx_init
-                0x00000000000803d4                gfx_draw_pixel
-                0x0000000000080440                gfx_draw_line
- .text          0x000000000008054c      0x3e4 lib/libhw.a(io.o)
-                0x0000000000080598                gpio_call
-                0x00000000000806a0                gpio_set
-                0x00000000000806d4                gpio_clear
-                0x0000000000080708                gpio_pull
-                0x000000000008073c                gpio_function
-                0x000000000008076c                gpio_use_as_alt5
-                0x000000000008079c                uart_init
-                0x0000000000080860                uart_putc
-                0x00000000000808a8                uart_getc
-                0x00000000000808e4                uart_print
- .text          0x0000000000080930      0x2f4 lib/libhw.a(term.o)
-                0x0000000000080930                get_font_glyph
-                0x00000000000809bc                term_draw_char
-                0x0000000000080b7c                term_draw_str
+                0x0000000000080074                process_command
+                0x00000000000802cc                start_cmd_processor
+                0x0000000000080398                h_help
+                0x0000000000080454                h_put_circle
+                0x00000000000804f0                h_put_rect
+                0x00000000000805a4                h_put_square
+                0x0000000000080640                h_circles
+                0x00000000000807f0                h_clear
+                0x0000000000080810                h_colorlist
+ .text          0x0000000000080830        0x0 obj/boot.o
+ .text          0x0000000000080830      0x7e8 lib/libhw.a(shell.o)
+                0x0000000000080830                add_to_history
+                0x0000000000080964                retrieve_from_history
+                0x00000000000809e4                print_history
+                0x0000000000080a3c                shell_readline_with_echo
+ .text          0x0000000000081018      0x360 lib/libhw.a(strops.o)
+                0x0000000000081018                strops_cmp
+                0x0000000000081088                strops_ncmp
+                0x0000000000081100                strops_copy
+                0x000000000008114c                strops_atoi
+ .text          0x0000000000081378      0xae0 lib/libhw.a(gfx.o)
+                0x00000000000813c4                mbox_call
+                0x0000000000081468                gfx_init
+                0x00000000000816a4                gfx_print_color_list
+                0x00000000000816f8                gfx_get_color_by_idx
+                0x0000000000081718                gfx_get_color_from_str
+                0x00000000000817a4                gfx_clearscreen
+                0x0000000000081850                gfx_draw_pixel
+                0x00000000000818ac                gfx_draw_rect
+                0x000000000008199c                gfx_draw_square
+                0x0000000000081a4c                gfx_draw_line
+                0x0000000000081b4c                gfx_draw_circle
+ .text          0x0000000000081e58      0x41c lib/libhw.a(io.o)
+                0x0000000000081ea4                gpio_call
+                0x0000000000081fac                gpio_set
+                0x0000000000081fe0                gpio_clear
+                0x0000000000082014                gpio_pull
+                0x0000000000082048                gpio_function
+                0x0000000000082078                gpio_use_as_alt5
+                0x00000000000820a8                uart_init
+                0x000000000008216c                uart_putc
+                0x00000000000821b4                uart_getc
+                0x00000000000821ec                uart_getc_nb
+                0x0000000000082228                uart_print
+ .text          0x0000000000082274       0x68 lib/libhw.a(rand.o)
+                0x0000000000082274                rand
+                0x00000000000822b8                srand
 
-.iplt           0x0000000000080c24        0x0
- .iplt          0x0000000000080c24        0x0 obj/test.o
+.iplt           0x00000000000822dc        0x0
+ .iplt          0x00000000000822dc        0x0 obj/kernel.o
 
-.rodata         0x0000000000080c28    0x15320
+.rodata         0x00000000000822e0      0x363
  *(.rodata .rodata.* .gnu.linkonce.r*)
- .rodata        0x0000000000080c28       0x26 obj/test.o
- *fill*         0x0000000000080c4e        0x2 
- .rodata        0x0000000000080c50       0x26 lib/libhw.a(gfx.o)
- *fill*         0x0000000000080c76        0x2 
- .rodata        0x0000000000080c78    0x152d0 lib/libhw.a(term.o)
-                0x0000000000080c78                font_glyphs
+ .rodata        0x00000000000822e0      0x22a obj/kernel.o
+ *fill*         0x000000000008250a        0x6 
+ .rodata        0x0000000000082510        0xa lib/libhw.a(shell.o)
+ *fill*         0x000000000008251a        0x6 
+ .rodata        0x0000000000082520      0x123 lib/libhw.a(gfx.o)
                 [!provide]                        PROVIDE (_data = .)
 
-.rela.dyn       0x0000000000095f48        0x0
- .rela.iplt     0x0000000000095f48        0x0 obj/test.o
+.rela.dyn       0x0000000000082648        0x0
+ .rela.iplt     0x0000000000082648        0x0 obj/kernel.o
  .rela.text.boot
-                0x0000000000095f48        0x0 obj/test.o
+                0x0000000000082648        0x0 obj/kernel.o
 
-.data           0x0000000000095f48        0x0
+.data           0x0000000000082648      0x238
  *(.data .data.* .gnu.linkonce.d*)
- .data          0x0000000000095f48        0x0 obj/test.o
- .data          0x0000000000095f48        0x0 obj/boot.o
- .data          0x0000000000095f48        0x0 lib/libhw.a(gfx.o)
- .data          0x0000000000095f48        0x0 lib/libhw.a(io.o)
- .data          0x0000000000095f48        0x0 lib/libhw.a(term.o)
+ .data          0x0000000000082648       0xa8 obj/kernel.o
+                0x0000000000082648                commands
+ .data          0x00000000000826f0        0x0 obj/boot.o
+ .data          0x00000000000826f0        0x4 lib/libhw.a(shell.o)
+ .data          0x00000000000826f4        0x0 lib/libhw.a(strops.o)
+ *fill*         0x00000000000826f4        0x4 
+ .data          0x00000000000826f8      0x180 lib/libhw.a(gfx.o)
+                0x00000000000826f8                colornames
+                0x00000000000827f8                colorvalues
+ .data          0x0000000000082878        0x0 lib/libhw.a(io.o)
+ .data          0x0000000000082878        0x8 lib/libhw.a(rand.o)
 
-.igot.plt       0x0000000000095f48        0x0
- .igot.plt      0x0000000000095f48        0x0 obj/test.o
+.igot.plt       0x0000000000082880        0x0
+ .igot.plt      0x0000000000082880        0x0 obj/kernel.o
 
-.bss            0x0000000000095f50       0xa8
-                0x0000000000095f50                . = ALIGN (0x10)
-                0x0000000000095f50                __bss_start = .
+.bss            0x0000000000082880      0xbb8
+                0x0000000000082880                . = ALIGN (0x10)
+                0x0000000000082880                __bss_start = .
  *(.bss .bss.*)
- .bss           0x0000000000095f50        0x0 obj/test.o
- .bss           0x0000000000095f50        0x0 obj/boot.o
- .bss           0x0000000000095f50       0xa8 lib/libhw.a(gfx.o)
-                0x0000000000095f50                mbox
-                0x0000000000095fe0                width
-                0x0000000000095fe4                height
-                0x0000000000095fe8                pitch
-                0x0000000000095ff0                FB
- .bss           0x0000000000095ff8        0x0 lib/libhw.a(io.o)
- .bss           0x0000000000095ff8        0x0 lib/libhw.a(term.o)
+ .bss           0x0000000000082880      0x104 obj/kernel.o
+                0x0000000000082880                commandline
+                0x0000000000082980                hist_index
+ .bss           0x0000000000082984        0x0 obj/boot.o
+ *fill*         0x0000000000082984        0x4 
+ .bss           0x0000000000082988      0xa04 lib/libhw.a(shell.o)
+ .bss           0x000000000008338c        0x0 lib/libhw.a(strops.o)
+ *fill*         0x000000000008338c        0x4 
+ .bss           0x0000000000083390       0xa8 lib/libhw.a(gfx.o)
+                0x0000000000083390                mbox
+                0x0000000000083420                width
+                0x0000000000083424                height
+                0x0000000000083428                pitch
+                0x0000000000083430                FB
+ .bss           0x0000000000083438        0x0 lib/libhw.a(io.o)
+ .bss           0x0000000000083438        0x0 lib/libhw.a(rand.o)
  *(COMMON)
-                0x0000000000095ff8                __bss_end = .
-                0x0000000000095ff8                _end = .
+                0x0000000000083438                __bss_end = .
+                0x0000000000083438                _end = .
 
 /DISCARD/
  *(.comment)
  *(.gnu*)
  *(.note*)
  *(.eh_frame*)
-                0x0000000000000015                __bss_size = ((__bss_end - __bss_start) >> 0x3)
-LOAD obj/test.o
+                0x0000000000000177                __bss_size = ((__bss_end - __bss_start) >> 0x3)
+LOAD obj/kernel.o
 LOAD obj/boot.o
 LOAD lib/libhw.a
-OUTPUT(test.elf elf64-littleaarch64)
+OUTPUT(kernel.elf elf64-littleaarch64)
 LOAD linker stubs

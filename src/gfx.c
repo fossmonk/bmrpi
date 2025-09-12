@@ -3,9 +3,8 @@
 #include "io.h"
 #include "gfx.h"
 #include "led.h"
-
-#define DISPLAY_WIDTH  (1920)
-#define DISPLAY_HEIGHT (1080)
+#include "strops.h"
+#include "colors.h"
 
 #define MBOX_VALID_RESP (0x80000000)
 
@@ -86,27 +85,144 @@ void gfx_init() {
         uint32_t fb_bus_addr = mbox[19];
         // The framebuffer address is returned in the 'allocate buffer' tag response
         FB = (uint8_t *)(uintptr_t)(fb_bus_addr + 0x40000000);
-
-        // for (int y = 0; y < height; y++) {
-        //     for (int x = 0; x < width; x++) {
-        //         ((uint32_t*)FB)[y * (pitch / 4) + x] = 0xFF00FFFF;  // CYAN, ARGB
-        //     }
-        // }
     } else {
         FB = NULL;
         while(1);
     }
 }
 
+/* Actual Graphics Functions */
+/* Color Name Table */
+char *colornames[] = {
+    "black",
+    "silver",
+    "gray",
+    "white",
+    "maroon",
+    "red",
+    "purple",
+    "fuchsia",
+    "green",
+    "lime",
+    "olive",
+    "yellow",
+    "navy",
+    "blue",
+    "teal",
+    "aqua",
+    "orange",
+    "gold",
+    "indigo",
+    "violet",
+    "turquoise",
+    "cyan",
+    "salmon",
+    "coral",
+    "tomato",
+    "orchid",
+    "hotpink",
+    "crimson",
+    "chocolate",
+    "sienna",
+    "peachpuff",
+    "lavender",
+};
+
+uint32_t colorvalues[] = {
+    CSS_BLACK,
+    CSS_SILVER,
+    CSS_GRAY,
+    CSS_WHITE,
+    CSS_MAROON,
+    CSS_RED,
+    CSS_PURPLE,
+    CSS_FUCHSIA,
+    CSS_GREEN,
+    CSS_LIME,
+    CSS_OLIVE,
+    CSS_YELLOW,
+    CSS_NAVY,
+    CSS_BLUE,
+    CSS_TEAL,
+    CSS_AQUA,
+    CSS_ORANGE,
+    CSS_GOLD,
+    CSS_INDIGO,
+    CSS_VIOLET,
+    CSS_TURQUOISE,
+    CSS_CYAN,
+    CSS_SALMON,
+    CSS_CORAL,
+    CSS_TOMATO,
+    CSS_ORCHID,
+    CSS_HOTPINK,
+    CSS_CRIMSON,
+    CSS_CHOCOLATE,
+    CSS_SIENNA,
+    CSS_PEACHPUFF,
+    CSS_LAVENDER,
+};
+
+uint32_t gfx_print_color_list() {
+    for(int i = 0; i < NUM_COLORS; i++) {
+        uart_print(colornames[i]);
+        uart_print("\r\n");
+    }
+}
+
+uint32_t gfx_get_color_by_idx(int i) {
+    return colorvalues[i];
+}
+
+uint32_t gfx_get_color_from_str(char *cname) {
+    uint32_t color_idx = NUM_COLORS;
+    for(int i = 0; i < NUM_COLORS; i++) {
+        if(strops_cmp(colornames[i], cname) == 0) {
+            color_idx = i;
+            break;
+        }
+    }
+    
+    if(color_idx < 32) {
+        return colorvalues[color_idx];
+    }
+
+    // return CYAN by default
+    return CSS_CYAN;
+}
+
+void gfx_clearscreen() {
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            ((uint32_t*)FB)[y * (pitch / 4) + x] = 0xFF000000;  // BLACK, ARGB
+        }
+    }
+}
+
 void gfx_draw_pixel(int32_t x, int32_t y, uint32_t color) {
-    uart_print("DRAWING PIXEL\r\n");
     int32_t offset = (y * pitch) + (x * 4);
     *((uint32_t *)(FB + offset)) = color;
 }
 
-void gfx_draw_line(int x1, int y1, int x2, int y2, uint32_t color)  
-{  
-    uart_print("Trying to draw line\r\n");
+void gfx_draw_rect(int x1, int y1, int x2, int y2, uint32_t color, int fill) {
+    int y = y1;
+
+    while (y <= y2) {
+        int x = x1;
+        while (x <= x2) {
+            if ((x == x1 || x == x2) || (y == y1 || y == y2)) gfx_draw_pixel(x, y, color);
+            else if (fill) gfx_draw_pixel(x, y, color);
+            x++;
+        }
+        y++;
+    }
+}
+
+void gfx_draw_square(int x, int y, int a, uint32_t color, int fill) {
+    gfx_draw_rect(x + a/2, y + a/2, x + a/2, y + a/2, color, fill);
+}
+
+void gfx_draw_line(int x1, int y1, int x2, int y2, uint32_t color) {  
     int dx, dy, p, x, y;
 
     dx = x2-x1;
@@ -125,5 +241,38 @@ void gfx_draw_line(int x1, int y1, int x2, int y2, uint32_t color)
           p = p + 2*dy;
        }
        x++;
+    }
+}
+
+void gfx_draw_circle(int x0, int y0, int radius, uint32_t color, int fill) {
+    int x = radius;
+    int y = 0;
+    int err = 0;
+ 
+    while (x >= y) {
+        if (fill) {
+            gfx_draw_line(x0 - y, y0 + x, x0 + y, y0 + x, color);
+            gfx_draw_line(x0 - x, y0 + y, x0 + x, y0 + y, color);
+            gfx_draw_line(x0 - x, y0 - y, x0 + x, y0 - y, color);
+            gfx_draw_line(x0 - y, y0 - x, x0 + y, y0 - x, color);
+        }
+        gfx_draw_pixel(x0 - y, y0 + x, color);
+        gfx_draw_pixel(x0 + y, y0 + x, color);
+        gfx_draw_pixel(x0 - x, y0 + y, color);
+        gfx_draw_pixel(x0 + x, y0 + y, color);
+        gfx_draw_pixel(x0 - x, y0 - y, color);
+        gfx_draw_pixel(x0 + x, y0 - y, color);
+        gfx_draw_pixel(x0 - y, y0 - x, color);
+        gfx_draw_pixel(x0 + y, y0 - x, color);
+
+        if (err <= 0) {
+            y += 1;
+            err += 2*y + 1;
+        }
+    
+        if (err > 0) {
+            x -= 1;
+            err -= 2*x + 1;
+        }
     }
 }

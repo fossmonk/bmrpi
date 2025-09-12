@@ -12,6 +12,8 @@ CC_OPTS=-nostdlib -nostartfiles -ffreestanding -march=armv8-a+fp+simd
 LD_OPTS=
 AR_OPTS=rcs
 
+DRIVE=S
+
 ifeq ($(DEBUG), 1)
 	CC_OPTS+= -g -O0
 	LD_OPTS+= -g -O0
@@ -25,7 +27,10 @@ libs:
 	@$(CC) $(CC_OPTS) -c src/gfx.c -o obj/gfx.o
 	@$(CC) $(CC_OPTS) -c src/term.c -o obj/term.o
 	@$(CC) $(CC_OPTS) -c src/maths.c -o obj/maths.o
-	@$(AR) $(AR_OPTS) lib/libhw.a obj/maths.o obj/gfx.o obj/led.o obj/io.o obj/term.o
+	@$(CC) $(CC_OPTS) -c src/strops.c -o obj/strops.o
+	@$(CC) $(CC_OPTS) -c src/rand.c -o obj/rand.o
+	@$(CC) $(CC_OPTS) -c src/shell.c -o obj/shell.o
+	@$(AR) $(AR_OPTS) lib/libhw.a obj/shell.o obj/strops.o obj/maths.o obj/gfx.o obj/led.o obj/io.o obj/term.o obj/rand.o
 
 test: libs
 	@$(AS) -c startup/boot.S -o obj/boot.o
@@ -34,8 +39,14 @@ test: libs
 	@$(OBJCOPY) test.elf -O binary test.img
 	$(CP) test.img kernel8.img
 
+cmd-gfx: libs
+	@$(AS) -c games/cmd-gfx/boot.S -o obj/boot.o
+	@$(CC) $(CC_OPTS) -c games/cmd-gfx/kernel.c -o obj/kernel.o
+	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/kernel.o obj/boot.o lib/libhw.a -Map test.map
+	@$(OBJCOPY) kernel.elf -O binary kernel8.img
+
 flash:
-	@$(CP) test.img D:\kernel8.img
+	@$(CP) kernel8.img $(DRIVE):\kernel8.img
 
 clean:
 	@$(RM) obj\* lib\* *.img *.elf

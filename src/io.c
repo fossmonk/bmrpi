@@ -62,9 +62,17 @@ void uart_putc(unsigned char c) {
     mmio_write(AUX_MU_IO_REG, c);
 }
 
-uint8_t uart_getc() {
+int uart_getc() {
     // Wait until the UART's receive FIFO has data
     while(!(mmio_read(AUX_MU_LSR_REG) & 1));
+    
+    // Read the character from the UART's receive register
+    return mmio_read(AUX_MU_IO_REG);
+}
+
+int uart_getc_nb() {
+    // Wait until the UART's receive FIFO has data
+    if(!(mmio_read(AUX_MU_LSR_REG) & 1)) return -1;
     
     // Read the character from the UART's receive register
     return mmio_read(AUX_MU_IO_REG);
