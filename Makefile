@@ -47,6 +47,9 @@ cmd-gfx: libs
 	@$(OBJCOPY) kernel.elf -O binary kernel8.img
 
 run:
+	qemu-system-aarch64 -M raspi4b -kernel kernel8.img -serial null -serial stdio
+
+debug:
 	qemu-system-aarch64 -M raspi4b -kernel kernel8.img -serial null -serial stdio -S -gdb tcp::1234
 
 clean:

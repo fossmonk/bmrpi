@@ -5,8 +5,13 @@
 
 #define MAX_LINE_LENGTH (256)
 #define HISTORY_SIZE (10)
+#define MAX_CMDS (256)
+#define MATCH_MAP_SIZE (MAX_CMDS / 8)
 
 static char history[HISTORY_SIZE][MAX_LINE_LENGTH] = { 0 };
+
+/* Assume 256 cmds */
+static uint8_t match_map[MATCH_MAP_SIZE] = { 0 };
 
 static int size = 0;
 static int top = -1;
@@ -42,11 +47,46 @@ void print_history() {
     }
 }
 
-int shell_readline_with_echo(char *buf, int max_len) {
+int get_matches(char *buf, cmd_t *cmds, int* match_pos, int* match_idx) {
+    int matches = 0;
+    // zero init match map
+    for(int i = 0; i < MATCH_MAP_SIZE; i++) {
+        match_map[i] = 0;
+    }
+
+    for(int i = 0; cmds[i].handler != NULL; i++) {
+        char *p = buf;
+        char *cmd = cmds[i].name;
+        int match_count = 0;
+        int j = 0;
+        int matched = 1;
+        while(*p) {
+            if((*p++) != *cmd++) {
+                matched = 0;
+            } else {
+                match_count++;
+            }
+        }
+        if(matched) {
+            *match_pos = match_count;
+            *match_idx = i;
+            match_map[(i/8)] |= (1 << (i%8));
+            matches++;
+        }
+    }
+
+    return matches;
+}
+
+int shell_readline_with_echo(char *buf, int max_len, cmd_t *cmd_list) {
     int i = 0; // Current buffer length
     int cursor_pos = 0; // Current cursor position
     int c;
     int history_idx = -1;
+    int b_add_to_hist = 1;
+
+    // clear buffer
+    for(int i = 0; i < max_len; i++) buf[i] = '\0';
 
     // A loop to get characters and echo them
     while (1) {
@@ -123,10 +163,7 @@ int shell_readline_with_echo(char *buf, int max_len) {
                         continue;
                     }
                 }
-            }
-
-            // Normal character input handling
-            else if (c == '\n' || c == '\r') {
+            } else if (c == '\n' || c == '\r') { // Normal character input handling
                 uart_putc('\n');
                 break;
             } else if (c == '\b' || c == 0x7F) { // Backspace or Delete
@@ -142,6 +179,41 @@ int shell_readline_with_echo(char *buf, int max_len) {
                     uart_putc(' ');
                     // Move cursor back
                     for (int k = cursor_pos; k <= i; k++) uart_print("\b");
+                }
+            } else if (c == '\t') { // Handle TAB
+                // Check buffer and see if any commands match
+                if(cmd_list != NULL) {
+                    int match_pos = 0, match_idx = 0;
+                    int n = get_matches(buf, cmd_list, &match_pos, &match_idx);
+                    if(n == 1) {
+                        /* Only one match, get that command and complete the buf */
+                        char *cmd = cmd_list[match_idx].name;
+                        int z = 0;
+                        for(z = match_pos; cmd[z] != '\0'; z++) {
+                            buf[z] = cmd[z];
+                            uart_putc(buf[z]);
+                        }
+                        uart_putc(' ');
+                        i = z + 1;
+                    } else if (n > 1) {
+                        /* Many matches, print them to console and exit. Leave buf as is. Don't add to history */
+                        b_add_to_hist = 0;
+                        uart_print("\n");
+                        for(int cmd_idx = 0; cmd_list[cmd_idx].handler != NULL; cmd_idx++) {
+                            int match_bit = (match_map[cmd_idx / 8] >> (cmd_idx % 8)) & 0x01;
+                            if(match_bit == 1) {
+                                uart_print(cmd_list[cmd_idx].name);
+                                uart_putc('\n');
+                            }
+                        }
+                        uart_putc('\n');
+                        // print the prompt again
+                        uart_print(PROMPT);
+                        // print the buf again to screen
+                        uart_print(buf);
+                    } else {
+                        /* No match, leave as is */
+                    }
                 }
             } else {
                 if (i < max_len - 1) {
@@ -162,7 +234,7 @@ int shell_readline_with_echo(char *buf, int max_len) {
     }
 
     if (i < max_len) buf[i] = '\0';
-    add_to_history(buf);
+    if (b_add_to_hist) add_to_history(buf);
 
     return i;
 }

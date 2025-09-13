@@ -9,26 +9,19 @@
 
 #define MAX_LINE_LENGTH (256)
 #define MAX_ARGS (10)
-#define NUM_CMDS (12)
-#define PROMPT "rpi4b » "
 
 char commandline[MAX_LINE_LENGTH] = { 0 };
 
 int hist_index = 0;
-
-typedef struct {
-    char* name;
-    char* help;
-    void (*handler)(char**, int);
-} cmd_t;
 
 // handles
 void h_help(char **args, int argc);
 void h_put_circle(char **args, int argc);
 void h_colorlist(char **args, int argc);
 void h_clear(char **args, int argc);
-void h_show(char **args, int argc);
 void h_put_rect(char **args, int argc);
+void h_clear_rect(char **args, int argc);
+void h_show(char **args, int argc);
 void h_put_square(char **args, int argc);
 void h_circles(char** args, int argc);
 void h_dmacopy_test(char **args, int argc);
@@ -36,7 +29,7 @@ void h_r32(char **args, int argc);
 void h_w32(char **args, int argc);
 void h_idmacopy(char **args, int argc);
 
-cmd_t commands[NUM_CMDS] = {
+cmd_t commands[] = {
     { "help", "Prints this help message", h_help },
     { "colorlist", "Print the list of colors supported", h_colorlist },
     { "dmatest", "Does a RAM to RAM DMA Copy test", h_dmacopy_test },
@@ -44,11 +37,13 @@ cmd_t commands[NUM_CMDS] = {
     { "w32", "Write word to addr. Args: addr, word", h_w32 },
     { "idma", "Interactive DMA copy. Give args as physical addr: dst, src, byte_count", h_idmacopy },
     { "clear", "Clears the screen.", h_clear },
-    { "show", "Shows the screen.", h_show },
+    { "rclear", "Clears part of screen specified by rect(x0, y0, x1, y1).", h_clear_rect },
+    { "show", "Push draw buffer to display", h_show },
     { "circle", "Draw a circle. Args: x, y, r, color", h_put_circle },
     { "circles", "Draw n random circles. Args: n, seed[optional]", h_circles },
     { "rect", "Draw a rectangle. Args: x1, y1, x2, y2, color", h_put_rect },
     { "square", "Draw a square. Args: x, y, a, color", h_put_square },
+    { "null", "null", NULL}, // sentry for while looping
 };
 
 void start_cmd_processor(void);
@@ -96,7 +91,7 @@ int process_command(char *cmdline) {
 
     // Find the matching command_handler and invoke
     int found = 0;
-    for(int i = 0; i < NUM_CMDS; ++i) {
+    for(int i = 0; commands[i].handler != NULL; ++i) {
         if(strops_cmp(args[0], commands[i].name) == 0) {
             found = 1;
             commands[i].handler(args, argc);
@@ -113,7 +108,7 @@ void start_cmd_processor(void) {
         uart_print(PROMPT);
 
         // Read line
-        int rl_return = shell_readline_with_echo(commandline, MAX_LINE_LENGTH);
+        int rl_return = shell_readline_with_echo(commandline, MAX_LINE_LENGTH, commands);
         if(rl_return < 0) {
             uart_print("Readine error.");
             break;
@@ -144,13 +139,31 @@ void start_cmd_processor(void) {
 
 void h_help(char **args, int argc) {
     uart_print("Available commands:\n");
-    for(int i = 0; i < NUM_CMDS; ++i) {
+    for(int i = 0; commands[i].handler != NULL; ++i) {
         uart_print("  - ");
         uart_print(commands[i].name);
         uart_print(" => ");
         uart_print(commands[i].help);
         uart_putc('\n');
     }
+}
+
+void h_clear_rect(char **args, int argc) {
+    if(argc < 5) {
+        uart_print("Not enough arguments. Check help.");
+        return;
+    }
+
+    int x0 = strops_atoi(args[1]);
+    int y0 = strops_atoi(args[2]);
+    int x1 = strops_atoi(args[3]);
+    int y1 = strops_atoi(args[4]);
+
+    gfx_clear_rect(x0, y0, x1, y1);
+}
+
+void h_show(char **args, int argc) {
+    gfx_push_to_screen();
 }
 
 void h_put_circle(char **args, int argc) {
@@ -164,7 +177,7 @@ void h_put_circle(char **args, int argc) {
     int r = strops_atoi(args[3]);
     uint32_t color = gfx_get_color_from_str(args[4]);
     
-    gfx_draw_circle(x, y, r, color, 1);
+    gfx_draw_circle_imm(x, y, r, color, 1);
 }
 
 void h_put_rect(char **args, int argc) {
@@ -179,7 +192,7 @@ void h_put_rect(char **args, int argc) {
     int y1 = strops_atoi(args[4]);
     uint32_t color = gfx_get_color_from_str(args[5]);
     
-    gfx_draw_rect(x0, y0, x1, y1, color, 1);
+    gfx_draw_rect_imm(x0, y0, x1, y1, color, 1);
 }
 
 void h_put_square(char **args, int argc) {
@@ -193,7 +206,7 @@ void h_put_square(char **args, int argc) {
     int a = strops_atoi(args[3]);
     uint32_t color = gfx_get_color_from_str(args[4]);
     
-    gfx_draw_square(x, y, a, color, 1);
+    gfx_draw_square_imm(x, y, a, color, 1);
 }
 
 void h_circles(char** args, int argc) {
@@ -217,18 +230,15 @@ void h_circles(char** args, int argc) {
             int r = rand() % r_max;
             // Make sure they're always less than 192
             r %= 192;
-            int color = rand() % 32;
+            int color = (1 + rand()) % 32; // skip black,  1 <= color <= 31
             gfx_draw_circle(x, y, r, gfx_get_color_by_idx(color), 1);
         }
     }
+    gfx_push_to_screen();
 }
 
 void h_clear(char **args, int argc) {
     gfx_clearscreen();
-}
-
-void h_show(char **args, int argc) {
-    gfx_push_to_screen();
 }
 
 void h_colorlist(char **args, int argc) {

@@ -4,8 +4,9 @@
 #ifndef _UART_H_
 #define _UART_H_
 
-#define CHAR_TAB      (4444)
-#define CHAR_UP_ARROW (5555)
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
 
 void uart_init(void);
 void uart_putc(unsigned char c);

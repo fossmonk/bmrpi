@@ -209,16 +209,45 @@ uint32_t gfx_get_color_from_str(char *cname) {
     return CSS_CYAN;
 }
 
+void gfx_push_to_screen() {
+    dma_setup_2dmem_copy(gfx_dma_ch, (void *)BUS_ADDR(draw_buffer_phys), gfx_buffer, PD_WIDTH*4, PD_HEIGHT, PD_WIDTH*4, 2);
+    dma_start(gfx_dma_ch);
+    dma_wait(gfx_dma_ch);
+}
+
 void gfx_clearscreen() {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             ((uint32_t*)gfx_buffer)[y * (pitch_by_4) + x] = 0xFF000000;  // BLACK, ARGB
         }
     }
+    gfx_push_to_screen();
 }
 
-void gfx_push_to_screen() {
-    dma_setup_mem_copy(gfx_dma_ch, (void *)BUS_ADDR(draw_buffer_phys), gfx_buffer, PD_HEIGHT * PD_WIDTH * 4, 2);
+void gfx_clear_rect(int x0, int y0, int x1, int y1) {
+    for (int y = y0; y < y1; y++) {
+        for (int x = x0; x < x1; x++) {
+            ((uint32_t*)gfx_buffer)[y * (pitch_by_4) + x] = 0xFF000000;  // BLACK, ARGB
+        }
+    }
+    int offset0 = (y0 * pitch) + (x0 * 4);
+    dma_setup_2dmem_copy(gfx_dma_ch, 
+                        (void *)(BUS_ADDR(draw_buffer_phys) + offset0),
+                        (void *)((uintptr_t)gfx_buffer + offset0),
+                        (x1-x0)*4, (y1-y0), PD_WIDTH*4, 2);
+    dma_start(gfx_dma_ch);
+    dma_wait(gfx_dma_ch);
+}
+
+void gfx_push_rectblock(int x0, int y0, int x1, int y1) {
+    /* Assumption is that something in drawn on draw buffer. x0, y0, x1, y1
+       define the bounding box rectangle for the figure drawn
+    */
+    int offset0 = (y0 * pitch) + (x0 * 4);
+    dma_setup_2dmem_copy(gfx_dma_ch, 
+                        (void *)(BUS_ADDR(draw_buffer_phys) + offset0),
+                        (void *)((uintptr_t)gfx_buffer + offset0),
+                        (x1-x0)*4, (y1-y0), PD_WIDTH*4, 2);
     dma_start(gfx_dma_ch);
     dma_wait(gfx_dma_ch);
 }
@@ -258,8 +287,19 @@ void gfx_draw_rect(int x1, int y1, int x2, int y2, uint32_t color, int fill) {
     }
 }
 
+void gfx_draw_rect_imm(int x1, int y1, int x2, int y2, uint32_t color, int fill) {
+    gfx_draw_rect(x1, y1, x2, y2, color, fill);
+    gfx_push_rectblock(x1, y1, x2, y2);
+}
+
+
 void gfx_draw_square(int x, int y, int a, uint32_t color, int fill) {
     gfx_draw_rect(x - a/2, y - a/2, x + a/2, y + a/2, color, fill);
+}
+
+void gfx_draw_square_imm(int x, int y, int a, uint32_t color, int fill) {
+    gfx_draw_square(x, y, a, color, fill);
+    gfx_push_rectblock(x-a/2, y-a/2, x+a/2, y+a/2);
 }
 
 void gfx_draw_line(int x1, int y1, int x2, int y2, uint32_t color) {  
@@ -278,6 +318,28 @@ void gfx_draw_line(int x1, int y1, int x2, int y2, uint32_t color) {
           p = p+2*dy-2*dx;
        } else {
           gfx_draw_pixel(x, y, color);
+          p = p + 2*dy;
+       }
+       x++;
+    }
+}
+
+void gfx_draw_line_imm(int x1, int y1, int x2, int y2, uint32_t color) {
+    int dx, dy, p, x, y;
+
+    dx = x2-x1;
+    dy = y2-y1;
+    x = x1;
+    y = y1;
+    p = 2*dy-dx;
+
+    while (x < x2) {
+       if (p >= 0) {
+          gfx_draw_pixel_direct(x, y, color);
+          y++;
+          p = p+2*dy-2*dx;
+       } else {
+          gfx_draw_pixel_direct(x, y, color);
           p = p + 2*dy;
        }
        x++;
@@ -315,4 +377,9 @@ void gfx_draw_circle(int x0, int y0, int radius, uint32_t color, int fill) {
             err -= 2*x + 1;
         }
     }
+}
+
+void gfx_draw_circle_imm(int x0, int y0, int radius, uint32_t color, int fill) {
+    gfx_draw_circle(x0, y0, radius, color, fill);
+    gfx_push_rectblock(x0-radius, y0-radius, x0+radius, y0+radius);
 }

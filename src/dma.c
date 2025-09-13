@@ -78,7 +78,11 @@ void dma_close_channel(dma_channel *channel) {
     channel_map |= (1 << channel->channel);
 }
 
-void dma_setup_mem_copy(dma_channel *channel, void *dest, void *src, uint32_t length, uint32_t burst_length) {
+void dma_setup_mem_copy(dma_channel *channel, 
+                        void *dest, 
+                        void *src, 
+                        uint32_t length, 
+                        uint32_t burst_length) {
     channel->block->transfer_info = (burst_length << TI_BURST_LENGTH_SHIFT)
 						    | TI_SRC_WIDTH
 						    | TI_SRC_INC
@@ -88,7 +92,26 @@ void dma_setup_mem_copy(dma_channel *channel, void *dest, void *src, uint32_t le
     channel->block->src_addr = arm_to_phys(src);
     channel->block->dest_addr = arm_to_phys(dest);
     channel->block->transfer_length = length;
-    channel->block->mode_2d_stride = 0;
+    channel->block->stride = 0;
+    channel->block->next_block_addr = 0;
+}
+
+void dma_setup_2dmem_copy(dma_channel *channel, 
+                          void *dest, void *src, 
+                          uint32_t width_in_bytes, 
+                          uint32_t height_in_pixels,
+                          uint32_t pitch,
+                          uint32_t burst_length) {
+    channel->block->transfer_info = (burst_length << TI_BURST_LENGTH_SHIFT)
+                            | TI_TDMODE
+						    | TI_SRC_INC
+						    | TI_DEST_INC;
+    
+    uint32_t stride = pitch - width_in_bytes;
+    channel->block->src_addr = arm_to_phys(src);
+    channel->block->dest_addr = arm_to_phys(dest);
+    channel->block->transfer_length = (width_in_bytes & 0xFFFF) | ((height_in_pixels & 0x3FFF) << 16);
+    channel->block->stride = (stride & 0xFFFF) | ((stride & 0xFFFF) << 16);
     channel->block->next_block_addr = 0;
 }
 

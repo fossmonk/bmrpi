@@ -40,7 +40,7 @@ typedef struct {
     uint32_t src_addr;
     uint32_t dest_addr;
     uint32_t transfer_length;
-    uint32_t mode_2d_stride;
+    uint32_t stride;
     uint32_t next_block_addr;
     uint32_t res[2];
 } dma_control_block;
@@ -65,6 +65,12 @@ typedef enum {
 dma_channel *dma_open_channel(uint32_t channel);
 void dma_close_channel(dma_channel *channel);
 void dma_setup_mem_copy(dma_channel *channel, void *dest, void *src, uint32_t length, uint32_t burst_length);
+void dma_setup_2dmem_copy(dma_channel *channel, 
+                          void *dest, void *src, 
+                          uint32_t width_in_bytes, 
+                          uint32_t height_in_pixels,
+                          uint32_t pitch,
+                          uint32_t burst_length);
 void dma_start(dma_channel *channel);
 uint8_t dma_wait(dma_channel *channel);
 
