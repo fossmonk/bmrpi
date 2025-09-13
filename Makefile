@@ -22,6 +22,7 @@ endif
 all: test
 
 libs:
+	@$(CC) $(CC_OPTS) -c src/dma.c -o obj/dma.o
 	@$(CC) $(CC_OPTS) -c src/io.c -o obj/io.o
 	@$(CC) $(CC_OPTS) -c src/led.c -o obj/led.o
 	@$(CC) $(CC_OPTS) -c src/gfx.c -o obj/gfx.o
@@ -30,7 +31,7 @@ libs:
 	@$(CC) $(CC_OPTS) -c src/strops.c -o obj/strops.o
 	@$(CC) $(CC_OPTS) -c src/rand.c -o obj/rand.o
 	@$(CC) $(CC_OPTS) -c src/shell.c -o obj/shell.o
-	@$(AR) $(AR_OPTS) lib/libhw.a obj/shell.o obj/strops.o obj/maths.o obj/gfx.o obj/led.o obj/io.o obj/term.o obj/rand.o
+	@$(AR) $(AR_OPTS) lib/libhw.a obj/dma.o obj/shell.o obj/strops.o obj/maths.o obj/gfx.o obj/led.o obj/io.o obj/term.o obj/rand.o
 
 test: libs
 	@$(AS) -c startup/boot.S -o obj/boot.o
@@ -45,8 +46,8 @@ cmd-gfx: libs
 	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/kernel.o obj/boot.o lib/libhw.a -Map test.map
 	@$(OBJCOPY) kernel.elf -O binary kernel8.img
 
-flash:
-	@$(CP) kernel8.img $(DRIVE):\kernel8.img
+run:
+	qemu-system-aarch64 -M raspi4b -kernel kernel8.img -serial null -serial stdio -S -gdb tcp::1234
 
 clean:
 	@$(RM) obj\* lib\* *.img *.elf

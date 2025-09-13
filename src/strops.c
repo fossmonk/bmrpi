@@ -24,6 +24,54 @@ int strops_copy(char *dst, const char *src) {
     while(*src) *dst++ = *src++;
 }
 
+void strops_u2hex(uint32_t value, char *out) {
+    static const char hex[] = "0123456789ABCDEF";
+
+    out[0] = '0';
+    out[1] = 'x';
+    for (int i = 0; i < 8; i++) {
+        // Extract nibble from most significant to least
+        uint32_t nibble = (value >> ((7 - i) * 4)) & 0xF;
+        out[2 + i] = hex[nibble];
+    }
+    out[10] = '\0';
+}
+
+static int8_t hex_char_to_int(char c) {
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    } else if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    } else if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+    return -1; // Indicates an error
+}
+
+uint32_t strops_htoi(char *hex_string) {
+    uint32_t result = 0;
+
+    // Skip the "0x" prefix if it exists
+    if (hex_string[0] == '0' && (hex_string[1] == 'x' || hex_string[1] == 'X')) {
+        hex_string += 2;
+    }
+
+    // Process each character in the string
+    while (*hex_string != '\0') {
+        int8_t value = hex_char_to_int(*hex_string);
+        if (value == -1) {
+            // Stop on the first non-hexadecimal character
+            break;
+        }
+        
+        // Left-shift the current result by 4 bits and add the new digit
+        result = (result << 4) | value;
+        hex_string++;
+    }
+
+    return result;
+}
+
 int strops_atoi(const char *str) {
     int result = 0;
     int sign = 1;

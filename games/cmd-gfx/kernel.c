@@ -5,10 +5,11 @@
 #include "../../src/strops.h"
 #include "../../src/rand.h"
 #include "../../src/shell.h"
+#include "../../src/dma.h"
 
 #define MAX_LINE_LENGTH (256)
 #define MAX_ARGS (10)
-#define NUM_CMDS (7)
+#define NUM_CMDS (12)
 #define PROMPT "rpi4b » "
 
 char commandline[MAX_LINE_LENGTH] = { 0 };
@@ -26,14 +27,24 @@ void h_help(char **args, int argc);
 void h_put_circle(char **args, int argc);
 void h_colorlist(char **args, int argc);
 void h_clear(char **args, int argc);
+void h_show(char **args, int argc);
 void h_put_rect(char **args, int argc);
 void h_put_square(char **args, int argc);
 void h_circles(char** args, int argc);
+void h_dmacopy_test(char **args, int argc);
+void h_r32(char **args, int argc);
+void h_w32(char **args, int argc);
+void h_idmacopy(char **args, int argc);
 
 cmd_t commands[NUM_CMDS] = {
     { "help", "Prints this help message", h_help },
     { "colorlist", "Print the list of colors supported", h_colorlist },
+    { "dmatest", "Does a RAM to RAM DMA Copy test", h_dmacopy_test },
+    { "r32", "Read n words starting from addr. Args: addr, count", h_r32 },
+    { "w32", "Write word to addr. Args: addr, word", h_w32 },
+    { "idma", "Interactive DMA copy. Give args as physical addr: dst, src, byte_count", h_idmacopy },
     { "clear", "Clears the screen.", h_clear },
+    { "show", "Shows the screen.", h_show },
     { "circle", "Draw a circle. Args: x, y, r, color", h_put_circle },
     { "circles", "Draw n random circles. Args: n, seed[optional]", h_circles },
     { "rect", "Draw a rectangle. Args: x1, y1, x2, y2, color", h_put_rect },
@@ -44,7 +55,7 @@ void start_cmd_processor(void);
 
 void kernel_main() {
     uart_init();
-    uart_print("HELLO FROM RASPI 4B\r\n\r\n");
+    uart_print("Hello! Welcome to RPi4B MASH (Mad Again SHell).\r\n\r\n");
     gfx_init();
     start_cmd_processor();
 
@@ -136,7 +147,7 @@ void h_help(char **args, int argc) {
     for(int i = 0; i < NUM_CMDS; ++i) {
         uart_print("  - ");
         uart_print(commands[i].name);
-        uart_print(":");
+        uart_print(" => ");
         uart_print(commands[i].help);
         uart_putc('\n');
     }
@@ -198,14 +209,14 @@ void h_circles(char** args, int argc) {
     srand(seed);
     if(n) {
         while(n--) {
-            int x = rand() % DISPLAY_WIDTH;
-            int y = rand() % DISPLAY_HEIGHT;
-            int x_min = (x < (DISPLAY_WIDTH - x)) ? x : (DISPLAY_WIDTH - x);
-            int y_min = (x < (DISPLAY_HEIGHT - y)) ? y : (DISPLAY_HEIGHT - y);
-            int r_min = (x_min < y_min) ? x_min : y_min;
-            int r = 10 + rand() % r_min;
-            // 10 < r < 100
-            r %= 100;
+            int x = rand() % PD_WIDTH;
+            int y = rand() % PD_HEIGHT;
+            int x_min = (x < (PD_WIDTH - x)) ? x : (PD_WIDTH - x);
+            int y_min = (y < (PD_HEIGHT - y)) ? y : (PD_HEIGHT - y);
+            int r_max = (x_min < y_min) ? x_min : y_min;
+            int r = rand() % r_max;
+            // Make sure they're always less than 192
+            r %= 192;
             int color = rand() % 32;
             gfx_draw_circle(x, y, r, gfx_get_color_by_idx(color), 1);
         }
@@ -216,6 +227,95 @@ void h_clear(char **args, int argc) {
     gfx_clearscreen();
 }
 
+void h_show(char **args, int argc) {
+    gfx_push_to_screen();
+}
+
 void h_colorlist(char **args, int argc) {
     gfx_print_color_list();
+}
+
+void h_r32(char **args, int argc) {
+    if (argc < 3) {
+        uart_print("Not enough arguments. Check help.");
+        return;
+    }
+
+    uint32_t addr = strops_htoi(args[1]);
+    uint32_t count = strops_atoi(args[2]);
+
+    char temp[10];
+    for(int i = 0; i < count; i++) {
+        uint32_t p = addr + i*4;
+        uint32_t val = *(uint32_t *)(uintptr_t)(p);
+        strops_u2hex(p, temp);
+        uart_print(temp);
+        uart_print(" : ");
+        strops_u2hex(val, temp);
+        uart_print(temp);
+        uart_print("\n");
+    }
+}
+
+void h_w32(char **args, int argc) {
+    if (argc < 3) {
+        uart_print("Not enough arguments. Check help.");
+        return;
+    }
+
+    uint32_t addr = strops_htoi(args[1]);
+    uint32_t val = strops_htoi(args[2]);
+
+    *(uint32_t *)(uintptr_t)(addr) = val;
+}
+
+void h_idmacopy(char **args, int argc) {
+    if (argc < 4) {
+        uart_print("Not enough arguments. Check help.");
+        return;
+    }
+
+    uint32_t dst = strops_htoi(args[1]);
+    uint32_t src = strops_htoi(args[2]);
+    uint32_t count = strops_htoi(args[3]);
+
+    dma_channel *ch = dma_open_channel(CT_NORMAL);
+    dma_setup_mem_copy(ch, (void *)(uintptr_t)dst, (void *)(uintptr_t)src, count, 2);
+    dma_start(ch);
+    dma_wait(ch);
+    dma_close_channel(ch);
+}
+
+uint32_t dma_srcbuf[128] __attribute((aligned(32))) = { 0 };
+uint32_t dma_dstbuf[128] __attribute((aligned(32))) = { 0 };
+void h_dmacopy_test(char **args, int argc) {
+    for(int i = 0; i < 128; i++) {
+        dma_srcbuf[i] = i;
+    }
+    int fail = 0;
+    
+    dma_channel *ch = dma_open_channel(CT_NORMAL);
+    dma_setup_mem_copy(ch, dma_dstbuf, dma_srcbuf, 128*4, 2);
+    dma_start(ch);
+    dma_wait(ch);
+    for(int i = 0; i < 128; i++) {
+        if(dma_dstbuf[i] != dma_srcbuf[i]) {
+            fail = 1;
+            break;
+        }
+    }
+    if(fail) {
+        char temp[10];
+        uart_print("DMA Memcpy Test - FAILED :(\n");
+        uart_print("SRC         DST       \n");
+        for(int i = 0; i < 128; i++) {
+            strops_u2hex(dma_srcbuf[i], temp);
+            uart_print(temp); uart_print("  ");
+            strops_u2hex(dma_dstbuf[i], temp);
+            uart_print(temp); uart_print("\n");
+        }
+    } else {
+        uart_print("DMA Memcpy Test - PASSED !!\n");
+    }
+    dma_close_channel(ch);
 }

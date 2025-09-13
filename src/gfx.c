@@ -5,13 +5,25 @@
 #include "led.h"
 #include "strops.h"
 #include "colors.h"
+#include "dma.h"
 
 #define MBOX_VALID_RESP (0x80000000)
 
+#define BUS_ADDR(addr) (((uint64_t)addr | 0x40000000) & ~0xC0000000)
+
 volatile uint32_t mbox[36] __attribute__((aligned(16)));
 
-uint32_t width, height, pitch;
-uint8_t *FB;
+uint8_t gfx_buffer[PD_HEIGHT*PD_WIDTH*4] __attribute__((section(".bss.gfx_buffer"))) __attribute__((aligned(32)));
+
+uint32_t width, height, pitch, pitch_by_4;
+uint8_t *FB0;
+#ifdef DOUBLE_BUFFER
+uint8_t *FB1;
+uint8_t *display_buffer;
+#endif
+uint8_t *draw_buffer;
+uint8_t *draw_buffer_phys;
+dma_channel *gfx_dma_ch;
 
 int32_t mbox_call(uint8_t ch) {
     // Get the physical address of the mailbox buffer
@@ -38,6 +50,22 @@ int32_t mbox_call(uint8_t ch) {
     return 0;
 }
 
+int32_t mbox_call_nb(uint8_t ch) {
+    // Get the physical address of the mailbox buffer
+    uint32_t mbox_phys = (uint32_t)(uintptr_t)mbox;
+
+    // message address + channel number
+    uint32_t r = ((mbox_phys & 0x3FFFFFFF) | (ch & 0xF));
+
+    // wait until mailbox is not full
+    while (mmio_read(MBOX_STATUS) & MBOX_FULL);
+
+    // Write message address to mailbox
+    mmio_write(MBOX_WRITE, r);
+
+    return 0;
+}
+
 void gfx_init() {
     mbox[0] = 35 * 4; // message size in bytes
     mbox[1] = 0;      // This is a request message
@@ -46,15 +74,15 @@ void gfx_init() {
     mbox[2] = 0x48003; 
     mbox[3] = 8;              // Value buffer size
     mbox[4] = 0;              // Request/response indicator
-    mbox[5] = DISPLAY_WIDTH;  // Width
-    mbox[6] = DISPLAY_HEIGHT; // Height
+    mbox[5] = PD_WIDTH;  // Width
+    mbox[6] = PD_HEIGHT; // Height
 
     // Tag 2: Set virtual (buffer) width/height
     mbox[7] = 0x48004;
     mbox[8] = 8;
     mbox[9] = 0;
-    mbox[10] = DISPLAY_WIDTH;  // Width
-    mbox[11] = DISPLAY_HEIGHT; // Height
+    mbox[10] = VD_WIDTH;  // Width
+    mbox[11] = VD_HEIGHT; // Height
 
     // Tag 3: Set color depth
     mbox[12] = 0x48005;
@@ -80,87 +108,77 @@ void gfx_init() {
     // Send the message and check for success
     if (mbox_call(MBOX_CH_PROP)) {
         pitch = mbox[24];
+        pitch_by_4 = pitch/4;
         width = mbox[5];
         height = mbox[6];
         uint32_t fb_bus_addr = mbox[19];
+        draw_buffer_phys = (uint8_t *)(uintptr_t)(fb_bus_addr);
         // The framebuffer address is returned in the 'allocate buffer' tag response
-        FB = (uint8_t *)(uintptr_t)(fb_bus_addr + 0x40000000);
+        FB0 = (uint8_t *)(uintptr_t)(fb_bus_addr + 0x40000000);
+        #ifdef DOUBLE_BUFFER
+        FB1 = FB0 + (PD_HEIGHT * PD_WIDTH * 4);
+        draw_buffer = FB1;
+        display_buffer = FB0;
+        #else
+        draw_buffer = FB0;
+        #endif
+
+        // Initialize DMA for buffer copy
+        gfx_dma_ch = dma_open_channel(CT_NORMAL);
     } else {
-        FB = NULL;
         while(1);
     }
 }
 
+void gfx_set_virtual_offset(uint32_t offset) {
+    mbox[0] = 7 * 4; // buffer size in bytes
+    mbox[1] = 0;     // request/response
+
+    // Set virtual offset
+    mbox[2] = 0x00048009; // Set virtual offset
+    mbox[3] = 8;
+    mbox[4] = 8;
+    mbox[5] = 0; // X offset
+    mbox[6] = offset; // Y offset
+
+    mbox[7] = 0; // End tag
+    mbox_call(MBOX_CH_PROP);
+}
+
+#ifdef DOUBLE_BUFFER
+void gfx_update_display() {
+    static int swap = 1;
+
+    if(swap) {
+        uint32_t offset = PD_HEIGHT;
+        gfx_set_virtual_offset(offset);
+        draw_buffer = FB0;
+        // display_buffer = FB1;
+        swap = 0;
+    } else {
+        uint32_t offset = 0;
+        gfx_set_virtual_offset(offset);
+        draw_buffer = FB1;
+        display_buffer = FB0;
+        swap = 1;
+    }
+}
+#endif
+
 /* Actual Graphics Functions */
 /* Color Name Table */
 char *colornames[] = {
-    "black",
-    "silver",
-    "gray",
-    "white",
-    "maroon",
-    "red",
-    "purple",
-    "fuchsia",
-    "green",
-    "lime",
-    "olive",
-    "yellow",
-    "navy",
-    "blue",
-    "teal",
-    "aqua",
-    "orange",
-    "gold",
-    "indigo",
-    "violet",
-    "turquoise",
-    "cyan",
-    "salmon",
-    "coral",
-    "tomato",
-    "orchid",
-    "hotpink",
-    "crimson",
-    "chocolate",
-    "sienna",
-    "peachpuff",
-    "lavender",
+    "black", "silver", "gray", "white", "maroon", "red", "purple", "fuchsia",
+    "green", "lime", "olive", "yellow", "navy", "blue", "teal", "aqua", 
+    "orange", "gold", "indigo", "violet", "turquoise", "cyan", "salmon", "coral",
+    "tomato", "orchid", "hotpink", "crimson", "chocolate", "sienna", "peachpuff","lavender",
 };
 
 uint32_t colorvalues[] = {
-    CSS_BLACK,
-    CSS_SILVER,
-    CSS_GRAY,
-    CSS_WHITE,
-    CSS_MAROON,
-    CSS_RED,
-    CSS_PURPLE,
-    CSS_FUCHSIA,
-    CSS_GREEN,
-    CSS_LIME,
-    CSS_OLIVE,
-    CSS_YELLOW,
-    CSS_NAVY,
-    CSS_BLUE,
-    CSS_TEAL,
-    CSS_AQUA,
-    CSS_ORANGE,
-    CSS_GOLD,
-    CSS_INDIGO,
-    CSS_VIOLET,
-    CSS_TURQUOISE,
-    CSS_CYAN,
-    CSS_SALMON,
-    CSS_CORAL,
-    CSS_TOMATO,
-    CSS_ORCHID,
-    CSS_HOTPINK,
-    CSS_CRIMSON,
-    CSS_CHOCOLATE,
-    CSS_SIENNA,
-    CSS_PEACHPUFF,
-    CSS_LAVENDER,
+    CSS_BLACK, CSS_SILVER, CSS_GRAY, CSS_WHITE, CSS_MAROON, CSS_RED, CSS_PURPLE, CSS_FUCHSIA,
+    CSS_GREEN, CSS_LIME, CSS_OLIVE, CSS_YELLOW, CSS_NAVY, CSS_BLUE, CSS_TEAL, CSS_AQUA,
+    CSS_ORANGE, CSS_GOLD, CSS_INDIGO, CSS_VIOLET, CSS_TURQUOISE, CSS_CYAN, CSS_SALMON, CSS_CORAL,
+    CSS_TOMATO, CSS_ORCHID, CSS_HOTPINK, CSS_CRIMSON, CSS_CHOCOLATE, CSS_SIENNA, CSS_PEACHPUFF, CSS_LAVENDER,
 };
 
 uint32_t gfx_print_color_list() {
@@ -194,14 +212,36 @@ uint32_t gfx_get_color_from_str(char *cname) {
 void gfx_clearscreen() {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            ((uint32_t*)FB)[y * (pitch / 4) + x] = 0xFF000000;  // BLACK, ARGB
+            ((uint32_t*)gfx_buffer)[y * (pitch_by_4) + x] = 0xFF000000;  // BLACK, ARGB
+        }
+    }
+}
+
+void gfx_push_to_screen() {
+    dma_setup_mem_copy(gfx_dma_ch, (void *)BUS_ADDR(draw_buffer_phys), gfx_buffer, PD_HEIGHT * PD_WIDTH * 4, 2);
+    dma_start(gfx_dma_ch);
+    dma_wait(gfx_dma_ch);
+}
+
+void gfx_clearscreen_direct() {
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            ((uint32_t*)draw_buffer)[y * (pitch_by_4) + x] = 0xFF000000;  // BLACK, ARGB
+            #ifdef DOUBLE_BUFFER
+            ((uint32_t*)display_buffer)[y * (pitch_by_4) + x] = 0xFF000000;  // BLACK, ARGB
+            #endif
         }
     }
 }
 
 void gfx_draw_pixel(int32_t x, int32_t y, uint32_t color) {
     int32_t offset = (y * pitch) + (x * 4);
-    *((uint32_t *)(FB + offset)) = color;
+    *((uint32_t *)(gfx_buffer + offset)) = color;
+}
+
+void gfx_draw_pixel_direct(int32_t x, int32_t y, uint32_t color) {
+    int32_t offset = (y * pitch) + (x * 4);
+    *((uint32_t *)(draw_buffer + offset)) = color;
 }
 
 void gfx_draw_rect(int x1, int y1, int x2, int y2, uint32_t color, int fill) {
@@ -219,7 +259,7 @@ void gfx_draw_rect(int x1, int y1, int x2, int y2, uint32_t color, int fill) {
 }
 
 void gfx_draw_square(int x, int y, int a, uint32_t color, int fill) {
-    gfx_draw_rect(x + a/2, y + a/2, x + a/2, y + a/2, color, fill);
+    gfx_draw_rect(x - a/2, y - a/2, x + a/2, y + a/2, color, fill);
 }
 
 void gfx_draw_line(int x1, int y1, int x2, int y2, uint32_t color) {  
