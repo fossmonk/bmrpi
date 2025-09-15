@@ -5,7 +5,7 @@ LD=aarch64-none-elf-ld.exe
 OBJCOPY=aarch64-none-elf-objcopy.exe
 DEBUG=0
 
-CP=copy
+CP=copy /y
 RM=del /Q
 RMDIR=rmdir /s /q
 CC_OPTS=-nostdlib -nostartfiles -ffreestanding -march=armv8-a+fp+simd
@@ -19,19 +19,17 @@ ifeq ($(DEBUG), 1)
 	LD_OPTS+= -g -O0
 endif
 
-all: test
+# Get all C files in the src/ directory
+SRC_FILES := $(wildcard src/*.c)
+# Convert C file paths to object file paths
+OBJ_FILES := $(patsubst src/%.c, obj/%.o, $(SRC_FILES))
 
-libs:
-	@$(CC) $(CC_OPTS) -c src/dma.c -o obj/dma.o
-	@$(CC) $(CC_OPTS) -c src/io.c -o obj/io.o
-	@$(CC) $(CC_OPTS) -c src/led.c -o obj/led.o
-	@$(CC) $(CC_OPTS) -c src/gfx.c -o obj/gfx.o
-	@$(CC) $(CC_OPTS) -c src/term.c -o obj/term.o
-	@$(CC) $(CC_OPTS) -c src/maths.c -o obj/maths.o
-	@$(CC) $(CC_OPTS) -c src/strops.c -o obj/strops.o
-	@$(CC) $(CC_OPTS) -c src/rand.c -o obj/rand.o
-	@$(CC) $(CC_OPTS) -c src/shell.c -o obj/shell.o
-	@$(AR) $(AR_OPTS) lib/libhw.a obj/dma.o obj/shell.o obj/strops.o obj/maths.o obj/gfx.o obj/led.o obj/io.o obj/term.o obj/rand.o
+libs: $(OBJ_FILES)
+	@$(AR) $(AR_OPTS) lib/libhw.a $(OBJ_FILES)
+
+# A pattern rule to compile any C file from src/ to obj/
+obj/%.o: src/%.c
+	@$(CC) $(CC_OPTS) -c $< -o $@
 
 test: libs
 	@$(AS) -c startup/boot.S -o obj/boot.o
@@ -43,8 +41,18 @@ test: libs
 cmd-gfx: libs
 	@$(AS) -c games/cmd-gfx/boot.S -o obj/boot.o
 	@$(CC) $(CC_OPTS) -c games/cmd-gfx/kernel.c -o obj/kernel.o
-	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/kernel.o obj/boot.o lib/libhw.a -Map test.map
+	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
 	@$(OBJCOPY) kernel.elf -O binary kernel8.img
+
+move-sprite: libs
+	@$(AS) -c games/move-sprite/boot.S -o obj/boot.o
+	@$(CC) $(CC_OPTS) -c games/move-sprite/kernel.c -o obj/kernel.o
+	@$(CC) $(CC_OPTS) -c games/move-sprite/sprite/sprite.c -o obj/sprite.o
+	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/sprite.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
+	@$(OBJCOPY) kernel.elf -O binary kernel8.img
+
+flash:
+	@$(CP) kernel8.img G:\embedded-dev\rpishare\kernel8.img
 
 run:
 	qemu-system-aarch64 -M raspi4b -kernel kernel8.img -serial null -serial stdio

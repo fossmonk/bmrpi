@@ -6,6 +6,7 @@
 #include "strops.h"
 #include "colors.h"
 #include "dma.h"
+#include "printf.h"
 
 #define MBOX_VALID_RESP (0x80000000)
 
@@ -130,6 +131,14 @@ void gfx_init() {
     }
 }
 
+uint32_t gfx_get_pitch() {
+    return pitch;
+}
+
+uint32_t gfx_get_fb_bus_addr(void) {
+    return BUS_ADDR(draw_buffer_phys);
+}
+
 void gfx_set_virtual_offset(uint32_t offset) {
     mbox[0] = 7 * 4; // buffer size in bytes
     mbox[1] = 0;     // request/response
@@ -181,11 +190,17 @@ uint32_t colorvalues[] = {
     CSS_TOMATO, CSS_ORCHID, CSS_HOTPINK, CSS_CRIMSON, CSS_CHOCOLATE, CSS_SIENNA, CSS_PEACHPUFF, CSS_LAVENDER,
 };
 
-uint32_t gfx_print_color_list() {
+void gfx_get_dimensions(int *w, int *h) {
+    *w = width;
+    *h = height;
+}
+
+void gfx_print_color_list() {
     for(int i = 0; i < NUM_COLORS; i++) {
-        uart_print(colornames[i]);
-        uart_print("\r\n");
+        printf("%s ", colornames[i]);
+        if(i && i % 8 == 0) printf("\n");
     }
+    printf("\n");
 }
 
 uint32_t gfx_get_color_by_idx(int i) {
@@ -240,7 +255,7 @@ void gfx_clear_rect(int x0, int y0, int x1, int y1) {
 }
 
 void gfx_push_rectblock(int x0, int y0, int x1, int y1) {
-    /* Assumption is that something in drawn on draw buffer. x0, y0, x1, y1
+    /* Assumption is that something is drawn on draw buffer. x0, y0, x1, y1
        define the bounding box rectangle for the figure drawn
     */
     int offset0 = (y0 * pitch) + (x0 * 4);
@@ -298,8 +313,7 @@ void gfx_draw_square(int x, int y, int a, uint32_t color, int fill) {
 }
 
 void gfx_draw_square_imm(int x, int y, int a, uint32_t color, int fill) {
-    gfx_draw_square(x, y, a, color, fill);
-    gfx_push_rectblock(x-a/2, y-a/2, x+a/2, y+a/2);
+    gfx_draw_rect_imm(x-a/2, y-a/2, x+a/2, y+a/2, color, fill);
 }
 
 void gfx_draw_line(int x1, int y1, int x2, int y2, uint32_t color) {  

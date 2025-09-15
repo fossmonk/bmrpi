@@ -193,8 +193,10 @@ int shell_readline_with_echo(char *buf, int max_len, cmd_t *cmd_list) {
                             buf[z] = cmd[z];
                             uart_putc(buf[z]);
                         }
-                        uart_putc(' ');
                         i = z + 1;
+                        cursor_pos = i;
+                        buf[i] = ' ';
+                        uart_putc(' ');
                     } else if (n > 1) {
                         /* Many matches, print them to console and exit. Leave buf as is. Don't add to history */
                         b_add_to_hist = 0;

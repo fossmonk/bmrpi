@@ -6,6 +6,7 @@
 #include "../../src/rand.h"
 #include "../../src/shell.h"
 #include "../../src/dma.h"
+#include "../../src/printf.h"
 
 #define MAX_LINE_LENGTH (256)
 #define MAX_ARGS (10)
@@ -50,7 +51,7 @@ void start_cmd_processor(void);
 
 void kernel_main() {
     uart_init();
-    uart_print("Hello! Welcome to RPi4B MASH (Mad Again SHell).\r\n\r\n");
+    printf("Hello! Welcome to RPi4B MASH (Mad Again SHell).\n\n");
     gfx_init();
     start_cmd_processor();
 
@@ -105,12 +106,12 @@ void start_cmd_processor(void) {
     int status = 0;
 
     while(status == 0) {
-        uart_print(PROMPT);
+        printf(PROMPT);
 
         // Read line
         int rl_return = shell_readline_with_echo(commandline, MAX_LINE_LENGTH, commands);
         if(rl_return < 0) {
-            uart_print("Readine error.");
+            printf("Readine error.");
             break;
         }
 
@@ -118,20 +119,18 @@ void start_cmd_processor(void) {
         status = process_command(commandline);
 
         if(status == 1) {
-            uart_print("Unknown command `");
-            uart_print(commandline);
-            uart_print("`. Check help.");
+            printf("Unknown command `%s`. Check help.", commandline);
             // continue loop
             status = 0;
         }
 
         if(status == 2) {
-            uart_print("Exiting cmd processor....");
+            printf("Exiting cmd processor....");
             return;
         }
 
         // print two new lines after execution
-        uart_print("\n\n");
+        printf("\n\n");
     }
 }
 
@@ -140,17 +139,13 @@ void start_cmd_processor(void) {
 void h_help(char **args, int argc) {
     uart_print("Available commands:\n");
     for(int i = 0; commands[i].handler != NULL; ++i) {
-        uart_print("  - ");
-        uart_print(commands[i].name);
-        uart_print(" => ");
-        uart_print(commands[i].help);
-        uart_putc('\n');
+        printf(" - %s => %s\n", commands[i].name, commands[i].help);
     }
 }
 
 void h_clear_rect(char **args, int argc) {
     if(argc < 5) {
-        uart_print("Not enough arguments. Check help.");
+        printf("Not enough arguments. Check help.");
         return;
     }
 
@@ -168,7 +163,7 @@ void h_show(char **args, int argc) {
 
 void h_put_circle(char **args, int argc) {
     if(argc < 5) {
-        uart_print("Not enough arguments. Check help.");
+        printf("Not enough arguments. Check help.");
         return;
     }
 
@@ -182,7 +177,7 @@ void h_put_circle(char **args, int argc) {
 
 void h_put_rect(char **args, int argc) {
     if(argc < 6) {
-        uart_print("Not enough arguments. Check help.");
+        printf("Not enough arguments. Check help.");
         return;
     }
 
@@ -197,7 +192,7 @@ void h_put_rect(char **args, int argc) {
 
 void h_put_square(char **args, int argc) {
     if(argc < 5) {
-        uart_print("Not enough arguments. Check help.");
+        printf("Not enough arguments. Check help.");
         return;
     }
 
@@ -212,7 +207,7 @@ void h_put_square(char **args, int argc) {
 void h_circles(char** args, int argc) {
     uint32_t seed = 2;
     if(argc < 2) {
-        uart_print("Not enough arguments. Check help.");
+        printf("Not enough arguments. Check help.");
         return;
     }
     int n = strops_atoi(args[1]);
@@ -247,29 +242,23 @@ void h_colorlist(char **args, int argc) {
 
 void h_r32(char **args, int argc) {
     if (argc < 3) {
-        uart_print("Not enough arguments. Check help.");
+        printf("Not enough arguments. Check help.");
         return;
     }
 
     uint32_t addr = strops_htoi(args[1]);
     uint32_t count = strops_atoi(args[2]);
 
-    char temp[10];
     for(int i = 0; i < count; i++) {
         uint32_t p = addr + i*4;
         uint32_t val = *(uint32_t *)(uintptr_t)(p);
-        strops_u2hex(p, temp);
-        uart_print(temp);
-        uart_print(" : ");
-        strops_u2hex(val, temp);
-        uart_print(temp);
-        uart_print("\n");
+        printf("0x%x : 0x%x\n", p, val);
     }
 }
 
 void h_w32(char **args, int argc) {
     if (argc < 3) {
-        uart_print("Not enough arguments. Check help.");
+        printf("Not enough arguments. Check help.");
         return;
     }
 
@@ -281,7 +270,7 @@ void h_w32(char **args, int argc) {
 
 void h_idmacopy(char **args, int argc) {
     if (argc < 4) {
-        uart_print("Not enough arguments. Check help.");
+        printf("Not enough arguments. Check help.");
         return;
     }
 
@@ -316,16 +305,13 @@ void h_dmacopy_test(char **args, int argc) {
     }
     if(fail) {
         char temp[10];
-        uart_print("DMA Memcpy Test - FAILED :(\n");
-        uart_print("SRC         DST       \n");
+        printf("DMA Memcpy Test - FAILED :(\n");
+        printf("SRC         DST       \n");
         for(int i = 0; i < 128; i++) {
-            strops_u2hex(dma_srcbuf[i], temp);
-            uart_print(temp); uart_print("  ");
-            strops_u2hex(dma_dstbuf[i], temp);
-            uart_print(temp); uart_print("\n");
+            printf("0x%x 0x%x\n", dma_srcbuf[i], dma_dstbuf[i]);
         }
     } else {
-        uart_print("DMA Memcpy Test - PASSED !!\n");
+        printf("DMA Memcpy Test - PASSED !!\n");
     }
     dma_close_channel(ch);
 }

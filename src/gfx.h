@@ -4,19 +4,22 @@
 #ifndef _GFX_H
 #define _GFX_H
 
-#define PD_WIDTH  (1920)
-#define PD_HEIGHT (1080)
+#define PD_WIDTH  (1200)
+#define PD_HEIGHT (900)
 #define VD_WIDTH  (PD_WIDTH)
 #define VD_HEIGHT (PD_HEIGHT)
 
 void gfx_init(void);
+uint32_t gfx_get_pitch(void);
+uint32_t gfx_get_fb_bus_addr(void);
 void gfx_clearscreen(void);
 #ifdef DOUBLE_BUFFER
 void gfx_update_display(void);
 #endif
 void gfx_push_to_screen(void);
 void gfx_clear_rect(int x0, int y0, int x1, int y1);
-uint32_t gfx_print_color_list();
+void gfx_get_dimensions(int *w, int *h);
+void gfx_print_color_list(void);
 uint32_t gfx_get_color_from_str(char *cname);
 uint32_t gfx_get_color_by_idx(int i);
 void gfx_draw_pixel(int32_t x, int32_t y, uint32_t color);
