@@ -135,6 +135,10 @@ uint32_t gfx_get_pitch() {
     return pitch;
 }
 
+dma_channel* gfx_get_dma_ch() {
+    return gfx_dma_ch;
+}
+
 uint32_t gfx_get_fb_bus_addr(void) {
     return BUS_ADDR(draw_buffer_phys);
 }

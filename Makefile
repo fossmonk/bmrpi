@@ -47,8 +47,8 @@ cmd-gfx: libs
 move-sprite: libs
 	@$(AS) -c games/move-sprite/boot.S -o obj/boot.o
 	@$(CC) $(CC_OPTS) -c games/move-sprite/kernel.c -o obj/kernel.o
-	@$(CC) $(CC_OPTS) -c games/move-sprite/sprite/sprite.c -o obj/sprite.o
-	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/sprite.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
+	@$(CC) $(CC_OPTS) -c games/move-sprite/sprite/sprite_data.c -o obj/sprite_data.o
+	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/sprite_data.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
 	@$(OBJCOPY) kernel.elf -O binary kernel8.img
 
 flash:

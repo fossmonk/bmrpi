@@ -1,5 +1,6 @@
 #include "hw.h"
 #include "term.h"
+#include "dma.h"
 
 #ifndef _GFX_H
 #define _GFX_H
@@ -12,6 +13,7 @@
 void gfx_init(void);
 uint32_t gfx_get_pitch(void);
 uint32_t gfx_get_fb_bus_addr(void);
+dma_channel* gfx_get_dma_ch(void);
 void gfx_clearscreen(void);
 #ifdef DOUBLE_BUFFER
 void gfx_update_display(void);
