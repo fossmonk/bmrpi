@@ -134,6 +134,10 @@ void start_cmd_processor(void) {
     }
 }
 
+void print_no_args() {
+    printf("Not enough arguments. Check help.");
+}
+
 // handles' definitions
 
 void h_help(char **args, int argc) {
@@ -145,7 +149,7 @@ void h_help(char **args, int argc) {
 
 void h_clear_rect(char **args, int argc) {
     if(argc < 5) {
-        printf("Not enough arguments. Check help.");
+        print_no_args();
         return;
     }
 
@@ -163,7 +167,7 @@ void h_show(char **args, int argc) {
 
 void h_put_circle(char **args, int argc) {
     if(argc < 5) {
-        printf("Not enough arguments. Check help.");
+        print_no_args();
         return;
     }
 
@@ -177,7 +181,7 @@ void h_put_circle(char **args, int argc) {
 
 void h_put_rect(char **args, int argc) {
     if(argc < 6) {
-        printf("Not enough arguments. Check help.");
+        print_no_args();
         return;
     }
 
@@ -192,7 +196,7 @@ void h_put_rect(char **args, int argc) {
 
 void h_put_square(char **args, int argc) {
     if(argc < 5) {
-        printf("Not enough arguments. Check help.");
+        print_no_args();
         return;
     }
 
@@ -207,7 +211,7 @@ void h_put_square(char **args, int argc) {
 void h_circles(char** args, int argc) {
     uint32_t seed = 2;
     if(argc < 2) {
-        printf("Not enough arguments. Check help.");
+        print_no_args();
         return;
     }
     int n = strops_atoi(args[1]);
@@ -242,7 +246,7 @@ void h_colorlist(char **args, int argc) {
 
 void h_r32(char **args, int argc) {
     if (argc < 3) {
-        printf("Not enough arguments. Check help.");
+        print_no_args();
         return;
     }
 
@@ -258,7 +262,7 @@ void h_r32(char **args, int argc) {
 
 void h_w32(char **args, int argc) {
     if (argc < 3) {
-        printf("Not enough arguments. Check help.");
+        print_no_args();
         return;
     }
 
@@ -270,7 +274,7 @@ void h_w32(char **args, int argc) {
 
 void h_idmacopy(char **args, int argc) {
     if (argc < 4) {
-        printf("Not enough arguments. Check help.");
+        print_no_args();
         return;
     }
 
