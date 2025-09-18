@@ -4,13 +4,19 @@ This is intended to be a collection of baremetal applications in Raspberry Pi 4.
 
 ## Apps Done Yet
 
-- Basic boot => `make test` will compile the test.c file with the required libs to create a simple app which will print a hello on AUX MINI UART and print hello messages to the screen.
 - CMD-GFX =>
   - What started as experimenting with preliminary graphics drawing (line and circle using bresenham algorithm) has developed into a fun app!
   - It is basically a shell which supports some basic commands (read memory, write memory) and some graphics ones! (draw circle, square etc)
-  - Graphics is hardcoded to be 1920x1080, 32 bit color
+  - ~Graphics is hardcoded to be 1920x1080, 32 bit color~ Resolution can be selected, but color depth is 32b.
   - Shell supports history, tab completion, line editing with left and right arrows
-  - Display is done by first writing to a 1920x1080x32 byte buffer in RAM and then DMA ing to Framebuffer. 2D DMA MEM COPY is enabled for this.
+
+- BOUNCE =>
+  - A physics experiment, modelling freefalling bodies which has an imperfect elasticity
+  - Screen will show 1 Rubiks cube falling from top, bouncing off ground and finishing bounces. Once done, it is dropped again
+  - If you keep UART console open and press a, a new cube will be added in to the mix :)
+
+- MOVE-SPRITE =>
+  - Rudimentary efforts at a platformer style game, WIP.
   
 ## Drivers and Libs added
 
@@ -25,29 +31,38 @@ As I am lazy, the codebase is not very well structured. Peripheral drivers and s
 
 ## How to make 
 
-You need the aarch64-none-elf toolchain for Windows. Currently there are only 2 buildable target apps - test, and cmd-gfx. There is DEBUG=1 which can be added for symbols (helps in debug with QEMU + gdb). Lazy me has added make targets to launch qemu as well. Also the makefile is quite plain, without any fancy makefile logic to make it elegant. Might change it sometime :)
+You need the aarch64-none-elf toolchain for Windows. Currently there are 3 buildable target apps - bounce, move-sprite, cmd-gfx. There is DEBUG=1 which can be added for symbols (helps in debug with QEMU + gdb). Lazy me has added make targets to launch qemu as well. Also the makefile is quite plain, without any fancy makefile logic to make it elegant. Might change it sometime :)
 
-To make cmd-gfx, simply run `make cmd-gfx`. It should create the kernel8.img file you need to copy to the SD card (and the kernel.elf you need for QEMU and gdb)
+To make any app, simply run `make <appname>`. It should create the kernel8.img file you need to copy to the SD card (and the kernel.elf you need for QEMU and gdb). I use TFTP boot, so `make flash` copies it to my TFTP share location. Might make this generic.
 
-## Immediate TODO
+## How to add new app/game
 
-  - Add printf
-  - Add more string operations
+ - Create a folder with the appname under `games/`
+ - Copy the `boot.S` and `linker.ld` files from one of the app folders. 
+ - Add a file called kernel.c (or anyname, just update the Makefile accordingly)
+ - Add a new make target with the appname and update the makerules for the target
+
+## TODO (short features)
+
+  [x] Add printf
+  [x] Add more string operations
+  [ ] Cleanup
+  [ ] Software Serial Port
 
 ## Aspirations
-
- - A uart bootloader (like raspbootin). Removing and inserting SD card is a pain.
+ - More GAMES
  - Storage driver (SD card, or be some SPI flash)
  - File system for storage (fatfs, littlefs)
  - Implement malloc
  - MultiCore Applications
  - Compile an existing RTOS (Zephyr, FreeRTOS) and run some test apps.
 
-More apps. Something like desmos? Manim? Maybe a game like Flappy Bird? Initially input via UART, and then HID USB device?
+More apps. Something like desmos? Manim? Maybe a game like Flappy Bird?
 
 ## Big Aspirations
 
-GPU driver and GPU rendering (haha, I can dream)
+ - USB Host Driver
+ - Get all PL011 UARTs working
 
 ### Very Big Aspirations
 
