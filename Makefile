@@ -51,6 +51,13 @@ move-sprite: libs
 	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/sprite_data.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
 	@$(OBJCOPY) kernel.elf -O binary kernel8.img
 
+bounce: libs
+	@$(AS) -c games/bounce/boot.S -o obj/boot.o
+	@$(CC) $(CC_OPTS) -c games/bounce/kernel.c -o obj/kernel.o
+	@$(CC) $(CC_OPTS) -c games/bounce/sprite/sprite_data.c -o obj/sprite_data.o
+	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/sprite_data.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
+	@$(OBJCOPY) kernel.elf -O binary kernel8.img
+
 flash:
 	@$(CP) kernel8.img G:\embedded-dev\rpishare\kernel8.img
 

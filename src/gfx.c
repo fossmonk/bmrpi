@@ -218,7 +218,7 @@ void gfx_push_to_screen() {
     dma_wait(gfx_dma_ch);
 }
 
-static uint32_t blackarr = CSS_WHITE;
+static uint32_t blackarr __attribute__((aligned(32))) = 0xFF000000;
 void gfx_clearscreen() {
     dma_setup_mem_copy(gfx_dma_ch, gfx_buffer, &blackarr, PD_HEIGHT*PD_WIDTH*4, 1);
     gfx_dma_ch->block->transfer_info = ((1 << TI_BURST_LENGTH_SHIFT) | (TI_DEST_INC));
@@ -227,9 +227,9 @@ void gfx_clearscreen() {
 }
 
 void gfx_clear_rect(int x0, int y0, int x1, int y1) {
-    for (int y = y0; y <= y1; y++) {
-        for (int x = x0; x <= x1; x++) {
-            ((uint32_t*)gfx_buffer)[y * (pitch_by_4) + x] = 0xFF000000;  // BLACK, ARGB
+    for (int y = y0; y < y1; y++) {
+        for (int x = x0; x < x1; x++) {
+            ((uint32_t*)gfx_buffer)[y * (pitch_by_4) + x] = 0x00000000;  // BLACK, ARGB
         }
     }
 }

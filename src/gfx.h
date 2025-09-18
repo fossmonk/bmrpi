@@ -26,6 +26,7 @@ void gfx_wait_for_vsync(void);
 void gfx_set_virtual_offset(uint32_t offset);
 void gfx_update_display(void);
 void gfx_push_to_screen(void);
+void gfx_push_rectblock(int x0, int y0, int x1, int y1);
 void gfx_clear_rect(int x0, int y0, int x1, int y1);
 void gfx_get_dimensions(int *w, int *h);
 void gfx_print_color_list(void);

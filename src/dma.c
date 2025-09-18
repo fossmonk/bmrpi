@@ -110,7 +110,7 @@ void dma_setup_2dmem_copy(dma_channel *channel,
     uint32_t stride = pitch - width_in_bytes;
     channel->block->src_addr = arm_to_phys(src);
     channel->block->dest_addr = arm_to_phys(dest);
-    channel->block->transfer_length = (width_in_bytes & 0xFFFF) | ((height_in_pixels & 0x3FFF) << 16);
+    channel->block->transfer_length = (width_in_bytes & 0xFFFF) | (((height_in_pixels-1) & 0x3FFF) << 16);
     channel->block->stride = (stride & 0xFFFF) | ((stride & 0xFFFF) << 16);
     channel->block->next_block_addr = 0;
 }

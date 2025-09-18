@@ -49,3 +49,48 @@ void sincos(double theta, double *sin, double *cos) {
     *sin = (s/CORDIC_MUL) * (double)sm;
     *cos = (c/CORDIC_MUL) * (double)cm;
 }
+
+double logn(double x) {
+    // Natural logarithm is only defined for x > 0
+    if (x <= 0.0) {
+        return 0.0 / 0.0; // Return NaN (Not a Number)
+    }
+
+    // Taylor series approximation for ln(x)
+    const int num_terms = 100; // Number of terms for the series approximation
+    double z = (x - 1.0) / (x + 1.0);
+    double result = 0.0;
+    double z_squared = z * z;
+    double current_z_power = z;
+
+    for (int i = 1; i <= num_terms; i += 2) {
+        result += current_z_power / (double)i;
+        current_z_power *= z_squared;
+    }
+
+    return 2.0 * result;
+}
+
+double sqrt(double x) {
+    // Square root is only defined for non-negative numbers
+    if (x < 0.0) {
+        return 0.0 / 0.0; // Return NaN (Not a Number)
+    }
+
+    if (x == 0.0) {
+        return 0.0;
+    }
+
+    double guess = x;
+    const int num_iterations = 10; // A fixed number of iterations for simplicity
+
+    for (int i = 0; i < num_iterations; i++) {
+        guess = 0.5 * (guess + x / guess);
+    }
+    
+    return guess;
+}
+
+int floor(double x) {
+    return (int)x;
+}

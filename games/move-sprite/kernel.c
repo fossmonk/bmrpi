@@ -35,17 +35,15 @@ enum {
 
 void draw_loop(void);
 
-dma_channel *sch;
-
 void kernel_main() {
     uart_init();
     gfx_init();
     // register sprites
-    sprite_register(150, 200, v_main);
-    sprite_register(150, 200, v_side);
-    sprite_register(150, 200, v_jump);
-    sprite_register(150, 200, v_run);
-    sprite_register(150, 200, v_magic);
+    sprite_register(0, PD_HEIGHT-200, 150, 200, v_main);
+    sprite_register(0, PD_HEIGHT-200, 150, 200, v_side);
+    sprite_register(0, PD_HEIGHT-200, 150, 200, v_jump);
+    sprite_register(0, PD_HEIGHT-200, 150, 200, v_run);
+    sprite_register(0, PD_HEIGHT-200, 150, 200, v_magic);
     draw_loop();
     // spin
     while(1);
@@ -58,9 +56,6 @@ uint32_t prev_s_y = 0;
 uint32_t velocity = 10;
 uint32_t acc = 5;
 uint8_t in_jump = 0;
-
-int xdir = 1;
-int ydir = -1;
 
 int jump_get_inst_pos(int pos) {
     // motion 1d, with max jump height = 160
