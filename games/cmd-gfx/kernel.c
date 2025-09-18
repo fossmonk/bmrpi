@@ -7,6 +7,7 @@
 #include "../../src/shell.h"
 #include "../../src/dma.h"
 #include "../../src/printf.h"
+#include "../../src/text.h"
 
 #define MAX_LINE_LENGTH (256)
 #define MAX_ARGS (10)
@@ -19,6 +20,7 @@ int hist_index = 0;
 void h_help(char **args, int argc);
 void h_put_circle(char **args, int argc);
 void h_colorlist(char **args, int argc);
+void h_fontlist(char **args, int argc);
 void h_clear(char **args, int argc);
 void h_put_rect(char **args, int argc);
 void h_clear_rect(char **args, int argc);
@@ -29,10 +31,12 @@ void h_dmacopy_test(char **args, int argc);
 void h_r32(char **args, int argc);
 void h_w32(char **args, int argc);
 void h_idmacopy(char **args, int argc);
+void h_drawtext(char **args, int argc);
 
 cmd_t commands[] = {
     { "help", "Prints this help message", h_help },
     { "colorlist", "Print the list of colors supported", h_colorlist },
+    { "fontlist", "Print the list of fonts supported", h_fontlist },
     { "dmatest", "Does a RAM to RAM DMA Copy test", h_dmacopy_test },
     { "r32", "Read n words starting from addr. Args: addr, count", h_r32 },
     { "w32", "Write word to addr. Args: addr, word", h_w32 },
@@ -44,6 +48,7 @@ cmd_t commands[] = {
     { "circles", "Draw n random circles. Args: n, seed[optional]", h_circles },
     { "rect", "Draw a rectangle. Args: x1, y1, x2, y2, color", h_put_rect },
     { "square", "Draw a square. Args: x, y, a, color", h_put_square },
+    { "text", "Draw text. Args: x, y, text, color, font (index of font list, default is 0)", h_drawtext },
     { "null", "null", NULL}, // sentry for while looping
 };
 
@@ -74,11 +79,19 @@ int process_command(char *cmdline) {
 
         /* Check if we are at a token */
         if(*ptr != '\0') {
+            char c = *ptr;
+            int q_arg = 0;
+            if(c == '"' || c == '`' || c == '\'') {
+                q_arg = 1;
+                ptr++;
+            }
             args[argc++] = ptr;
             in_token = 1;
             /* Find the end of the token */
-            while((*ptr != '\0') && (*ptr != ' ') && (*ptr != '\t') && (*ptr != '\n') && (*ptr != '\r')) {
-                ptr++;
+            if(q_arg) {
+                while(*ptr != c) ptr++;
+            } else {
+                while((*ptr != '\0') && (*ptr != ' ') && (*ptr != '\t') && (*ptr != '\n') && (*ptr != '\r')) ptr++;
             }
             /* null-terminate the token */
             if(*ptr != '\0') {
@@ -318,4 +331,26 @@ void h_dmacopy_test(char **args, int argc) {
         printf("DMA Memcpy Test - PASSED !!\n");
     }
     dma_close_channel(ch);
+}
+
+void h_fontlist(char **args, int argc) {
+    text_print_fontlist();
+}
+
+void h_drawtext(char **args, int argc) {
+    if (argc < 5) {
+        print_no_args();
+        return;
+    }
+
+    int x = strops_atoi(args[1]);
+    int y = strops_atoi(args[2]);
+    char *s = args[3];
+    uint32_t color = gfx_get_color_from_str(args[4]);
+
+    int font = ROBOTO_MONO;
+    if(argc >= 6)font = strops_atoi(args[5]);
+    if(font >= FONT_COUNT)font = ROBOTO_MONO;
+
+    text_draw_str(x, y, s, font, color);
 }

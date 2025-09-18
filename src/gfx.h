@@ -1,5 +1,4 @@
 #include "hw.h"
-#include "term.h"
 #include "dma.h"
 
 #ifndef _GFX_H
@@ -7,8 +6,20 @@
 
 #undef DOUBLE_BUFFER
 
+#if defined(RES_480P)
 #define PD_WIDTH  (640)
 #define PD_HEIGHT (480)
+#elif defined(RES_720P)
+#define PD_WIDTH  (1280)
+#define PD_HEIGHT (720)
+#elif defined(RES_1080P)
+#define PD_WIDTH  (1920)
+#define PD_HEIGHT (1080)
+#else // fall back to 480p
+#define PD_WIDTH  (640)
+#define PD_HEIGHT (480)
+#endif
+
 #define VD_WIDTH  (PD_WIDTH)
 #ifndef DOUBLE_BUFFER
 #define VD_HEIGHT (PD_HEIGHT)

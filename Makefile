@@ -12,10 +12,20 @@ CC_OPTS=-nostdlib -nostartfiles -ffreestanding -march=armv8-a+fp+simd
 LD_OPTS=
 AR_OPTS=rcs
 
-DRIVE=S
+RES=480p
+
+ifeq ($(RES), 480p)
+	CC_OPTS+= -DRES_480P
+endif
+ifeq ($(RES), 720p)
+	CC_OPTS+= -DRES_720P
+endif
+ifeq ($(RES), 1080p)
+	CC_OPTS+= -DRES_1080P
+endif
 
 ifeq ($(DEBUG), 1)
-	CC_OPTS+= -g -O0
+	CC_OPTS+= -g -O0 -DDEBUG
 	LD_OPTS+= -g -O0
 endif
 
