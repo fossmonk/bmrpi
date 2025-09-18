@@ -15,14 +15,10 @@ int uart_getc_nb(void);
 void uart_print(char *str);
 void wait_msec(uint32_t n);
 
-static inline void mmio_write(uint32_t reg, uint32_t data)
-{
-	*(volatile uint32_t *)(MMIO_BASE + reg) = data;
-}
-
-static inline uint32_t mmio_read(uint32_t reg)
-{
-	return *(volatile uint32_t*)(MMIO_BASE + reg);
-}
+/* UART3 */
+void uart3_init(void);
+void uart3_putc(uint8_t c);
+int uart3_getc(void);
+int uart3_getc_nb(void);
 
 #endif /* _UART_H_ */

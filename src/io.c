@@ -4,6 +4,7 @@
 
 #define GPIO_MAX_PIN (53)
 #define GPIO_FUNCTION_ALT5 (2)
+#define GPIO_FUNCTION_ALT4 (3)
 #define GPIO_PULL_NONE (0)
 
 uint32_t gpio_call(uint32_t pin_number, 
@@ -36,6 +37,11 @@ uint32_t gpio_function(uint32_t pin_number, uint32_t value) { return gpio_call(p
 void gpio_use_as_alt5(uint32_t pin_number) {
     gpio_pull(pin_number, GPIO_PULL_NONE);
     gpio_function(pin_number, GPIO_FUNCTION_ALT5);
+}
+
+void gpio_use_as_alt4(uint32_t pin_number) {
+    gpio_pull(pin_number, GPIO_PULL_NONE);
+    gpio_function(pin_number, GPIO_FUNCTION_ALT4);
 }
 
 void uart_init() {
@@ -82,6 +88,40 @@ void uart_print(char *str) {
     if(str != NULL) {
         while(*str) uart_putc(*str++);
     }
+}
+
+void uart3_init() {
+    /* Disable UART3 first */
+    mmio_write(UART3_CR, 0);
+
+    // UART3 uses GPIO 4 and 5 in alt4
+    gpio_use_as_alt4(4);
+    gpio_use_as_alt4(5);
+    
+    // Clear interrupts
+    mmio_write(UART3_ICR, 0x7FF);
+    // Set baudrate as 115200. DIV = FUARTCLK/(16 * baud). 48M/(16*115200) = 26, 0.0417 * 64 = 3
+    mmio_write(UART3_IBRD, 26);
+    mmio_write(UART3_FBRD, 3);
+    // 8 data bits, fifo mode
+    mmio_write(UART3_LCRH, (0x7 << 4));
+    // Enable Tx, Rx, UART
+    mmio_write(UART3_CR, 0x301);
+}
+
+void uart3_putc(uint8_t c) {
+    while(!(mmio_read(UART3_FR) & 0x20));
+    mmio_write(UART3_DR, c);
+}
+
+int uart3_getc(void) {
+    while(!(mmio_read(UART3_FR) & 0x10));
+    return mmio_read(UART3_DR);
+}
+
+int uart3_getc_nb(void) {
+    while(!(mmio_read(UART3_FR) & 0x10)) return -1;
+    return mmio_read(UART3_DR);
 }
 
 void wait_msec(uint32_t n) {

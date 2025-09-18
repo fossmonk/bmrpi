@@ -2,6 +2,7 @@
 #include "sprite.h"
 #include "gfx.h"
 #include "dma.h"
+#include "printf.h"
 
 /* Pre Allocate Memory for Sprite Table */
 sprite_t g_sprite_table[MAX_SPRITES] __attribute__((section(".bss.sp_table")));
@@ -28,13 +29,15 @@ sprite_t* sprite_get(int s_idx) {
 
 void sprite_draw(sprite_t *s, int x, int y) {
     int offset = (y * gfx_get_pitch() + x*4);
-    dma_channel* sch = gfx_get_dma_ch();
+    dma_channel* sch = dma_open_channel(CT_NORMAL);
+    uint32_t gbuf = gfx_get_buffer();
     dma_setup_2dmem_copy(sch,
-                         (void *)(uintptr_t)(gfx_get_fb_bus_addr() + offset),
+                         (void *)(uintptr_t)(gbuf + offset),
                          (void *)((uintptr_t)s->buffer),
                          (s->width)*4, (s->height), PD_WIDTH*4, 2);
     // source stride is 0, this is lower 15 bits of stride reg. Zero it out. Setup API assumes same stride.
     sch->block->stride &= 0xFFFF0000;
     dma_start(sch);
-    dma_wait(sch);            
+    dma_wait(sch);
+    dma_close_channel(sch);
 }

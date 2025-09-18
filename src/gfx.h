@@ -5,19 +5,26 @@
 #ifndef _GFX_H
 #define _GFX_H
 
-#define PD_WIDTH  (1200)
-#define PD_HEIGHT (900)
+#undef DOUBLE_BUFFER
+
+#define PD_WIDTH  (640)
+#define PD_HEIGHT (480)
 #define VD_WIDTH  (PD_WIDTH)
+#ifndef DOUBLE_BUFFER
 #define VD_HEIGHT (PD_HEIGHT)
+#else
+#define VD_HEIGHT (PD_HEIGHT * 2)
+#endif
 
 void gfx_init(void);
 uint32_t gfx_get_pitch(void);
+uint32_t gfx_get_buffer(void);
 uint32_t gfx_get_fb_bus_addr(void);
 dma_channel* gfx_get_dma_ch(void);
 void gfx_clearscreen(void);
-#ifdef DOUBLE_BUFFER
+void gfx_wait_for_vsync(void);
+void gfx_set_virtual_offset(uint32_t offset);
 void gfx_update_display(void);
-#endif
 void gfx_push_to_screen(void);
 void gfx_clear_rect(int x0, int y0, int x1, int y1);
 void gfx_get_dimensions(int *w, int *h);

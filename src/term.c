@@ -2332,6 +2332,7 @@ void term_draw_char(uint8_t ch, int x, int y, uint32_t color) {
 
                 // Draw the pixel with the blended color.
                 gfx_draw_pixel(x + j, y + i, final_color);
+                // gfx_draw_pixel_direct(x + j, y + i, final_color);
             }
         }
     }

@@ -41,6 +41,27 @@
 #define UART0_ITOP      (UART0_BASE + 0x88)
 #define UART0_TDR       (UART0_BASE + 0x8C)
 
+/* UART3 */
+#define UART3_BASE      (GPIO_BASE + 0x1600)
+#define UART3_DR        (UART3_BASE + 0x00)
+#define UART3_RSRECR    (UART3_BASE + 0x04)
+#define UART3_FR        (UART3_BASE + 0x18)
+#define UART3_ILPR      (UART3_BASE + 0x20)
+#define UART3_IBRD      (UART3_BASE + 0x24)
+#define UART3_FBRD      (UART3_BASE + 0x28)
+#define UART3_LCRH      (UART3_BASE + 0x2C)
+#define UART3_CR        (UART3_BASE + 0x30)
+#define UART3_IFLS      (UART3_BASE + 0x34)
+#define UART3_IMSC      (UART3_BASE + 0x38)
+#define UART3_RIS       (UART3_BASE + 0x3C)
+#define UART3_MIS       (UART3_BASE + 0x40)
+#define UART3_ICR       (UART3_BASE + 0x44)
+#define UART3_DMACR     (UART3_BASE + 0x48)
+#define UART3_ITCR      (UART3_BASE + 0x80)
+#define UART3_ITIP      (UART3_BASE + 0x84)
+#define UART3_ITOP      (UART3_BASE + 0x88)
+#define UART3_TDR       (UART3_BASE + 0x8C)
+
 /* UART1 */
 #define AUX_BASE        (GPIO_BASE + 0x15000)
 #define AUX_ENABLE      (AUX_BASE + 0x04)
@@ -53,16 +74,16 @@
 #define AUX_MU_CNTL_REG (AUX_BASE + 0x60)
 #define AUX_MU_BAUD_REG (AUX_BASE + 0x68)
 
+/* MMIO READ/WRITE */
+static inline void mmio_write(uint32_t reg, uint32_t data)
+{
+	*(volatile uint32_t *)(MMIO_BASE + reg) = data;
+}
 
-/* MAILBOX */
-#define MBOX_BASE    (0xB880)
-#define MBOX_READ    (MBOX_BASE + 0x00)
-#define MBOX_STATUS  (MBOX_BASE + 0x18)
-#define MBOX_WRITE   (MBOX_BASE + 0x20)
-
-#define MBOX_CH_PROP (8)
-#define MBOX_FULL    (0x80000000)
-#define MBOX_EMPTY   (0x40000000)
+static inline uint32_t mmio_read(uint32_t reg)
+{
+	return *(volatile uint32_t*)(MMIO_BASE + reg);
+}
 
 /* HW DELAY */
 static inline void delay(int32_t count)
