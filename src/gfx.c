@@ -229,7 +229,18 @@ void gfx_clearscreen() {
 void gfx_clear_rect(int x0, int y0, int x1, int y1) {
     for (int y = y0; y < y1; y++) {
         for (int x = x0; x < x1; x++) {
-            ((uint32_t*)gfx_buffer)[y * (pitch_by_4) + x] = 0x00000000;  // BLACK, ARGB
+            ((uint32_t*)gfx_buffer)[y * (pitch_by_4) + x] = 0xFF000000;  // BLACK, ARGB
+        }
+    }
+}
+
+void gfx_dim_rect(int x0, int y0, int x1, int y1, uint8_t alpha) {
+    for (int y = y0; y < y1; y++) {
+        for (int x = x0; x < x1; x++) {
+            uint32_t p = ((uint32_t*)gfx_buffer)[y * (pitch_by_4) + x];
+            p &= 0x00FFFFFF;
+            p |= (alpha << 24);
+            ((uint32_t*)gfx_buffer)[y * (pitch_by_4) + x] = p;
         }
     }
 }

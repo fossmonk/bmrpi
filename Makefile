@@ -58,14 +58,20 @@ move-sprite: libs
 	@$(AS) -c games/move-sprite/boot.S -o obj/boot.o
 	@$(CC) $(CC_OPTS) -c games/move-sprite/kernel.c -o obj/kernel.o
 	@$(CC) $(CC_OPTS) -c games/move-sprite/sprite/sprite_data.c -o obj/sprite_data.o
-	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/sprite_data.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
+	@$(LD) $(LD_OPTS) -T games/move-sprite/linker.ld -o kernel.elf obj/sprite_data.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
 	@$(OBJCOPY) kernel.elf -O binary kernel8.img
 
 bounce: libs
 	@$(AS) -c games/bounce/boot.S -o obj/boot.o
 	@$(CC) $(CC_OPTS) -c games/bounce/kernel.c -o obj/kernel.o
 	@$(CC) $(CC_OPTS) -c games/bounce/sprite/sprite_data.c -o obj/sprite_data.o
-	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/sprite_data.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
+	@$(LD) $(LD_OPTS) -T games/bounce/linker.ld -o kernel.elf obj/sprite_data.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
+	@$(OBJCOPY) kernel.elf -O binary kernel8.img
+
+matrix-mazha: libs
+	@$(AS) -c games/matrix-mazha/boot.S -o obj/boot.o
+	@$(CC) $(CC_OPTS) -c games/matrix-mazha/kernel.c -o obj/kernel.o
+	@$(LD) $(LD_OPTS) -T games/matrix-mazha/linker.ld -o kernel.elf obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
 	@$(OBJCOPY) kernel.elf -O binary kernel8.img
 
 flash:

@@ -6608,6 +6608,18 @@ void text_print_fontlist(void) {
     printf("\n");
 }
 
+void text_get_font_dimensions(font_e f, int* glyph_w, int* glyph_h) {
+    if(f == ROBOTO_MONO) {
+        *glyph_h = ROBOTOMONO_REGULAR_GLYPH_HEIGHT;
+        *glyph_w = ROBOTOMONO_REGULAR_GLYPH_WIDTH;
+    } else if(f == SHREE) {
+        *glyph_h = SHREE_GLYPH_HEIGHT;
+        *glyph_w = SHREE_GLYPH_WIDTH;
+    } else {
+        return;
+    }
+}
+
 void text_draw_char(uint8_t ch, int x, int y, font_e f, uint32_t color) {
     // Get a pointer to the start of the glyph's pixel data from the font array.
     const uint32_t *glyph_data;
@@ -6651,7 +6663,7 @@ void text_draw_char(uint8_t ch, int x, int y, font_e f, uint32_t color) {
     dma_close_channel(fch);
 }
 
-void text_draw_str(int x, int y, char *s, font_e f, uint32_t color)
+void text_draw_str(int x, int y, char *s, font_e f, int dir, uint32_t color)
 {
     int glyph_w, glyph_h;
     if(f == ROBOTO_MONO) {
@@ -6662,15 +6674,37 @@ void text_draw_str(int x, int y, char *s, font_e f, uint32_t color)
         glyph_h = SHREE_GLYPH_HEIGHT;
     }
 
-    while (*s) {
-        if (*s == '\r') {
-            x = 0;
-        } else if(*s == '\n') {
-            x = 0; y += glyph_h;
-        } else {
-	        text_draw_char(*s, x, y, f, color);
-            x += glyph_w;
+    if(dir) {
+        // vertical text
+        while (*s) {
+            if (*s == '\r') {
+                y = 0;
+            } else if(*s == '\n') {
+                y = 0; x += glyph_w;
+            } else {
+                text_draw_char(*s, x, y, f, color);
+                y += glyph_h;
+            }
+            s++;
         }
-        s++;
+    } else {
+        // horizontal text
+        while (*s) {
+            if (*s == '\r') {
+                x = 0;
+            } else if(*s == '\n') {
+                x = 0; y += glyph_h;
+            } else {
+                text_draw_char(*s, x, y, f, color);
+                x += glyph_w;
+            }
+            s++;
+        }
     }
+
+}
+
+void text_draw_str_imm(int x, int y, char *s, font_e f, int dir, uint32_t color) {
+    text_draw_str(x, y, s, f, dir, color);
+    gfx_push_to_screen();
 }

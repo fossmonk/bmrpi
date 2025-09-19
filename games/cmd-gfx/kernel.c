@@ -187,8 +187,15 @@ void h_put_circle(char **args, int argc) {
     int x = strops_atoi(args[1]);
     int y = strops_atoi(args[2]);
     int r = strops_atoi(args[3]);
-    uint32_t color = gfx_get_color_from_str(args[4]);
-    
+    uint32_t color;
+    char *ptr = args[4];
+    if(ptr[0] == '0' && ptr[1] == 'x') {
+        // color as hex
+        color = strops_htoi(args[4]);
+    } else {
+        // color as string
+        color = gfx_get_color_from_str(args[4]);
+    }
     gfx_draw_circle_imm(x, y, r, color, 1);
 }
 
@@ -202,7 +209,15 @@ void h_put_rect(char **args, int argc) {
     int y0 = strops_atoi(args[2]);
     int x1 = strops_atoi(args[3]);
     int y1 = strops_atoi(args[4]);
-    uint32_t color = gfx_get_color_from_str(args[5]);
+    uint32_t color;
+    char *ptr = args[5];
+    if(ptr[0] == '0' && ptr[1] == 'x') {
+        // color as hex
+        color = strops_htoi(args[5]);
+    } else {
+        // color as string
+        color = gfx_get_color_from_str(args[5]);
+    }
     
     gfx_draw_rect_imm(x0, y0, x1, y1, color, 1);
 }
@@ -216,7 +231,15 @@ void h_put_square(char **args, int argc) {
     int x = strops_atoi(args[1]);
     int y = strops_atoi(args[2]);
     int a = strops_atoi(args[3]);
-    uint32_t color = gfx_get_color_from_str(args[4]);
+    uint32_t color;
+    char *ptr = args[4];
+    if(ptr[0] == '0' && ptr[1] == 'x') {
+        // color as hex
+        color = strops_htoi(args[4]);
+    } else {
+        // color as string
+        color = gfx_get_color_from_str(args[4]);
+    }
     
     gfx_draw_square_imm(x, y, a, color, 1);
 }
@@ -346,11 +369,22 @@ void h_drawtext(char **args, int argc) {
     int x = strops_atoi(args[1]);
     int y = strops_atoi(args[2]);
     char *s = args[3];
-    uint32_t color = gfx_get_color_from_str(args[4]);
-
+    uint32_t color;
+    char *ptr = args[4];
+    if(ptr[0] == '0' && ptr[1] == 'x') {
+        // color as hex
+        color = strops_htoi(args[4]);
+    } else {
+        // color as string
+        color = gfx_get_color_from_str(args[4]);
+    }
     int font = ROBOTO_MONO;
     if(argc >= 6)font = strops_atoi(args[5]);
     if(font >= FONT_COUNT)font = ROBOTO_MONO;
 
-    text_draw_str(x, y, s, font, color);
+    int dir = 0;
+    if(argc >= 7)dir = strops_atoi(args[6]);
+    if(dir > 1)dir = 0;
+
+    text_draw_str_imm(x, y, s, font, dir, color);
 }

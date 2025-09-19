@@ -39,6 +39,7 @@ void gfx_update_display(void);
 void gfx_push_to_screen(void);
 void gfx_push_rectblock(int x0, int y0, int x1, int y1);
 void gfx_clear_rect(int x0, int y0, int x1, int y1);
+void gfx_dim_rect(int x0, int y0, int x1, int y1, uint8_t alpha);
 void gfx_get_dimensions(int *w, int *h);
 void gfx_print_color_list(void);
 uint32_t gfx_get_color_from_str(char *cname);
