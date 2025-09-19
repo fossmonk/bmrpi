@@ -1,13 +1,26 @@
-CC=aarch64-none-elf-gcc.exe
-AS=aarch64-none-elf-as.exe
-AR=aarch64-none-elf-ar.exe
-LD=aarch64-none-elf-ld.exe
-OBJCOPY=aarch64-none-elf-objcopy.exe
-DEBUG=0
 
-CP=copy /y
-RM=del /Q
-RMDIR=rmdir /s /q
+DEBUG=0
+OS_NAME := $(shell uname -s)
+ifeq ($(OS_NAME),Linux)
+	CP = cp -r
+	RM = rm -rf
+	RMDIR = rm -rf
+	CC=aarch64-none-elf-gcc
+	AS=aarch64-none-elf-as
+	AR=aarch64-none-elf-ar
+	LD=aarch64-none-elf-ld
+	OBJCOPY=aarch64-none-elf-objcopy
+else 
+	CP=copy /y
+	RM=del /Q
+	RMDIR= rmdir /s /q
+	CC=aarch64-none-elf-gcc.exe
+	AS=aarch64-none-elf-as.exe
+	AR=aarch64-none-elf-ar.exe
+	LD=aarch64-none-elf-ld.exe
+	OBJCOPY=aarch64-none-elf-objcopy.exe
+endif
+
 CC_OPTS=-nostdlib -nostartfiles -ffreestanding -march=armv8-a+fp+simd
 LD_OPTS=
 AR_OPTS=rcs
@@ -28,6 +41,8 @@ ifeq ($(DEBUG), 1)
 	CC_OPTS+= -g -O0 -DDEBUG
 	LD_OPTS+= -g -O0
 endif
+
+
 
 # Get all C files in the src/ directory
 SRC_FILES := $(wildcard src/*.c)
@@ -68,9 +83,11 @@ bounce: libs
 	@$(LD) $(LD_OPTS) -T games/cmd-gfx/linker.ld -o kernel.elf obj/sprite_data.o obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
 	@$(OBJCOPY) kernel.elf -O binary kernel8.img
 
+
+ifneq ($(OS_NAME),Linux)
 flash:
 	@$(CP) kernel8.img G:\embedded-dev\rpishare\kernel8.img
-
+endif
 run:
 	qemu-system-aarch64 -M raspi4b -kernel kernel8.img -serial null -serial stdio
 
@@ -79,5 +96,4 @@ debug:
 
 clean:
 	@$(RM) obj\* lib\* *.img *.elf
-
 .PHONY: clean

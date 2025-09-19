@@ -1,6 +1,6 @@
 # BMRPI
 
-This is intended to be a collection of baremetal applications in Raspberry Pi 4. Makefile is written for aarch64 compiler tools for Windows (because I am lazy). May add support for linux as well later. Endgoal is to have some graphics based games/apps which can run baremetal on the RPI4.
+This is intended to be a collection of baremetal applications in Raspberry Pi 4. Makefile is written for aarch64 compiler tools. Endgoal is to have some graphics based games/apps which can run baremetal on the RPI4.
 
 ## Apps Done Yet
 
@@ -31,7 +31,9 @@ As I am lazy, the codebase is not very well structured. Peripheral drivers and s
 
 ## How to make 
 
-You need the aarch64-none-elf toolchain for Windows. Currently there are 3 buildable target apps - bounce, move-sprite, cmd-gfx. There is DEBUG=1 which can be added for symbols (helps in debug with QEMU + gdb). Lazy me has added make targets to launch qemu as well. Also the makefile is quite plain, without any fancy makefile logic to make it elegant. Might change it sometime :)
+You need the aarch64-none-elf toolchain.
+
+Currently there are 3 buildable target apps - bounce, move-sprite, cmd-gfx. There is DEBUG=1 which can be added for symbols (helps in debug with QEMU + gdb). Lazy me has added make targets to launch qemu as well. Also the makefile is quite plain, without any fancy makefile logic to make it elegant. Might change it sometime :)
 
 To make any app, simply run `make <appname>`. It should create the kernel8.img file you need to copy to the SD card (and the kernel.elf you need for QEMU and gdb). I use TFTP boot, so `make flash` copies it to my TFTP share location. Might make this generic.
 
