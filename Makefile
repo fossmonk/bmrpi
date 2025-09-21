@@ -77,6 +77,6 @@ debug:
 	qemu-system-aarch64 -M raspi4b -kernel kernel8.img -serial null -serial stdio -S -gdb tcp::1234
 
 clean:
-	@$(RM) obj\* lib\* *.img *.elf
+	@$(RM) obj\*.o lib\*.a *.img *.elf
 
 .PHONY: clean

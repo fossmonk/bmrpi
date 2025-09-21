@@ -250,12 +250,16 @@ void gfx_push_rectblock(int x0, int y0, int x1, int y1) {
        define the bounding box rectangle for the figure drawn
     */
     int offset0 = (y0 * pitch) + (x0 * 4);
-    dma_setup_2dmem_copy(gfx_dma_ch, 
+    if ((offset0 >= 0) && (offset0 <= PD_HEIGHT*PD_WIDTH*4)) {
+        dma_setup_2dmem_copy(gfx_dma_ch, 
                         (void *)((uintptr_t)(backbuffer) + offset0),
                         (void *)((uintptr_t)gfx_buffer + offset0),
                         (x1-x0)*4, (y1-y0), PD_WIDTH*4, 2);
-    dma_start(gfx_dma_ch);
-    dma_wait(gfx_dma_ch);
+        dma_start(gfx_dma_ch);
+        dma_wait(gfx_dma_ch);
+    } else {
+        printf("[ERROR] Trying to push out of bound rect block [(%d, %d) (%d, %d)]\n", x0, y0, x1, y1);
+    }
 }
 
 void gfx_clearscreen_direct() {
@@ -282,14 +286,18 @@ void gfx_draw_pixel_direct(int32_t x, int32_t y, uint32_t color) {
 void gfx_draw_rect(int x1, int y1, int x2, int y2, uint32_t color, int fill) {
     int y = y1;
 
-    while (y <= y2) {
-        int x = x1;
-        while (x <= x2) {
-            if ((x == x1 || x == x2) || (y == y1 || y == y2)) gfx_draw_pixel(x, y, color);
-            else if (fill) gfx_draw_pixel(x, y, color);
-            x++;
+    if((x1 < 0) || (x2 > PD_WIDTH) || (y1 < 0) || (y2 > PD_HEIGHT)) {
+        printf("[ERROR] Trying to draw rectangle out of bounds[(%d, %d) -> (%d, %d)]\n", x1, y1, x2, y2);
+    } else {
+        while (y <= y2) {
+            int x = x1;
+            while (x <= x2) {
+                if ((x == x1 || x == x2) || (y == y1 || y == y2)) gfx_draw_pixel(x, y, color);
+                else if (fill) gfx_draw_pixel(x, y, color);
+                x++;
+            }
+            y++;
         }
-        y++;
     }
 }
 
@@ -316,16 +324,20 @@ void gfx_draw_line(int x1, int y1, int x2, int y2, uint32_t color) {
     y = y1;
     p = 2*dy-dx;
 
-    while (x < x2) {
-       if (p >= 0) {
-          gfx_draw_pixel(x, y, color);
-          y++;
-          p = p+2*dy-2*dx;
-       } else {
-          gfx_draw_pixel(x, y, color);
-          p = p + 2*dy;
-       }
-       x++;
+    if((x1 < 0) || (x2 > PD_WIDTH) || (y1 < 0) || (y2 > PD_HEIGHT)) {
+        printf("[ERROR] Trying to draw line out of bounds[(%d, %d) -> (%d, %d)]\n", x1, y1, x2, y2);
+    } else {
+        while (x < x2) {
+           if (p >= 0) {
+              gfx_draw_pixel(x, y, color);
+              y++;
+              p = p+2*dy-2*dx;
+           } else {
+              gfx_draw_pixel(x, y, color);
+              p = p + 2*dy;
+           }
+           x++;
+        }
     }
 }
 
@@ -338,16 +350,20 @@ void gfx_draw_line_imm(int x1, int y1, int x2, int y2, uint32_t color) {
     y = y1;
     p = 2*dy-dx;
 
-    while (x < x2) {
-       if (p >= 0) {
-          gfx_draw_pixel_direct(x, y, color);
-          y++;
-          p = p+2*dy-2*dx;
-       } else {
-          gfx_draw_pixel_direct(x, y, color);
-          p = p + 2*dy;
-       }
-       x++;
+    if((x1 < 0) || (x2 > PD_WIDTH) || (y1 < 0) || (y2 > PD_HEIGHT)) {
+        printf("[ERROR] Trying to draw line out of bounds[(%d, %d) -> (%d, %d)]\n", x1, y1, x2, y2);
+    } else {
+        while (x < x2) {
+           if (p >= 0) {
+              gfx_draw_pixel_direct(x, y, color);
+              y++;
+              p = p+2*dy-2*dx;
+           } else {
+              gfx_draw_pixel_direct(x, y, color);
+              p = p + 2*dy;
+           }
+           x++;
+        }
     }
 }
 
@@ -355,33 +371,38 @@ void gfx_draw_circle(int x0, int y0, int radius, uint32_t color, int fill) {
     int x = radius;
     int y = 0;
     int err = 0;
- 
-    while (x >= y) {
-        if (fill) {
-            gfx_draw_line(x0 - y, y0 + x, x0 + y, y0 + x, color);
-            gfx_draw_line(x0 - x, y0 + y, x0 + x, y0 + y, color);
-            gfx_draw_line(x0 - x, y0 - y, x0 + x, y0 - y, color);
-            gfx_draw_line(x0 - y, y0 - x, x0 + y, y0 - x, color);
-        }
-        gfx_draw_pixel(x0 - y, y0 + x, color);
-        gfx_draw_pixel(x0 + y, y0 + x, color);
-        gfx_draw_pixel(x0 - x, y0 + y, color);
-        gfx_draw_pixel(x0 + x, y0 + y, color);
-        gfx_draw_pixel(x0 - x, y0 - y, color);
-        gfx_draw_pixel(x0 + x, y0 - y, color);
-        gfx_draw_pixel(x0 - y, y0 - x, color);
-        gfx_draw_pixel(x0 + y, y0 - x, color);
 
-        if (err <= 0) {
-            y += 1;
-            err += 2*y + 1;
-        }
+    if((x0 < radius) || (y0 < radius)) {
+        printf("[ERROR] Trying to draw circle out of bounds[(%d, %d) %d]\n", x0, y0, radius);
+    } else {
+        while (x >= y) {
+            if (fill) {
+                gfx_draw_line(x0 - y, y0 + x, x0 + y, y0 + x, color);
+                gfx_draw_line(x0 - x, y0 + y, x0 + x, y0 + y, color);
+                gfx_draw_line(x0 - x, y0 - y, x0 + x, y0 - y, color);
+                gfx_draw_line(x0 - y, y0 - x, x0 + y, y0 - x, color);
+            }
+            gfx_draw_pixel(x0 - y, y0 + x, color);
+            gfx_draw_pixel(x0 + y, y0 + x, color);
+            gfx_draw_pixel(x0 - x, y0 + y, color);
+            gfx_draw_pixel(x0 + x, y0 + y, color);
+            gfx_draw_pixel(x0 - x, y0 - y, color);
+            gfx_draw_pixel(x0 + x, y0 - y, color);
+            gfx_draw_pixel(x0 - y, y0 - x, color);
+            gfx_draw_pixel(x0 + y, y0 - x, color);
     
-        if (err > 0) {
-            x -= 1;
-            err -= 2*x + 1;
+            if (err <= 0) {
+                y += 1;
+                err += 2*y + 1;
+            }
+        
+            if (err > 0) {
+                x -= 1;
+                err -= 2*x + 1;
+            }
         }
     }
+ 
 }
 
 void gfx_draw_circle_imm(int x0, int y0, int radius, uint32_t color, int fill) {

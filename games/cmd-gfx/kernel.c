@@ -103,13 +103,17 @@ int process_command(char *cmdline) {
 
     if(argc == 0) return 0;
 
+    // Return early if command is quit
+    if(strops_cmp(args[0], "quit") == 0) {
+        return 2;
+    }
+    
     // Find the matching command_handler and invoke
     int found = 0;
     for(int i = 0; commands[i].handler != NULL; ++i) {
         if(strops_cmp(args[0], commands[i].name) == 0) {
             found = 1;
             commands[i].handler(args, argc);
-            return (strops_cmp(commands[i].name, "quit") == 0) ? 2 : 0;
         }
     }
     if(!found) return 1;
