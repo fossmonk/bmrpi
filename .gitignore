@@ -6,5 +6,5 @@
 utils/*.h
 boot/kernel8.img
 !boot
-lib/*
-obj/*
+lib/*.a
+obj/*.o

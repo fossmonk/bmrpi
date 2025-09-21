@@ -41,13 +41,6 @@ libs: $(OBJ_FILES)
 obj/%.o: src/%.c
 	@$(CC) $(CC_OPTS) -c $< -o $@
 
-test: libs
-	@$(AS) -c startup/boot.S -o obj/boot.o
-	@$(CC) $(CC_OPTS) -c test.c -o obj/test.o
-	@$(LD) $(LD_OPTS) -T linker.ld -o test.elf obj/test.o obj/boot.o lib/libhw.a -Map test.map
-	@$(OBJCOPY) test.elf -O binary test.img
-	$(CP) test.img kernel8.img
-
 cmd-gfx: libs
 	@$(AS) -c games/cmd-gfx/boot.S -o obj/boot.o
 	@$(CC) $(CC_OPTS) -c games/cmd-gfx/kernel.c -o obj/kernel.o
