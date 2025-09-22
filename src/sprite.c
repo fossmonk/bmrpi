@@ -56,20 +56,22 @@ void sprite_draw(sprite_t *s, int x, int y) {
 }
 
 void sprite_put(sprite_t *s) {
-    int x = s->xpos;
-    int y = s->ypos;
-    int offset = (y*gfx_get_pitch() + x*4);
-    dma_channel* sch = dma_open_channel(CT_NORMAL);
-    uint32_t gbuf = gfx_get_buffer();
-    dma_setup_2dmem_copy(sch,
-                         (void *)(uintptr_t)(gbuf + offset),
-                         (void *)((uintptr_t)s->buffer),
-                         (s->width)*4, (s->height), PD_WIDTH*4, 8);
-    // source stride is 0, this is lower 15 bits of stride reg. Zero it out. Setup API assumes same stride.
-    sch->block->stride &= 0xFFFF0000;
-    dma_start(sch);
-    dma_wait(sch);
-    dma_close_channel(sch);
+    if(s->buffer != NULL) {
+        int x = s->xpos;
+        int y = s->ypos;
+        int offset = (y*gfx_get_pitch() + x*4);
+        dma_channel* sch = dma_open_channel(CT_NORMAL);
+        uint32_t gbuf = gfx_get_buffer();
+        dma_setup_2dmem_copy(sch,
+                             (void *)(uintptr_t)(gbuf + offset),
+                             (void *)((uintptr_t)s->buffer),
+                             (s->width)*4, (s->height), PD_WIDTH*4, 8);
+        // source stride is 0, this is lower 15 bits of stride reg. Zero it out. Setup API assumes same stride.
+        sch->block->stride &= 0xFFFF0000;
+        dma_start(sch);
+        dma_wait(sch);
+        dma_close_channel(sch);
+    }
 }
 
 void sprite_put_direct(sprite_t *s) {

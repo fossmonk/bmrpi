@@ -24,6 +24,12 @@ int strops_copy(char *dst, const char *src) {
     while(*src) *dst++ = *src++;
 }
 
+int strops_len(const char *s) {
+    int count = 0;
+    while(*s++ != '\0')count++;
+    return count;
+}
+
 void strops_u2hex(uint32_t value, char *out) {
     static const char hex[] = "0123456789ABCDEF";
 
@@ -35,6 +41,25 @@ void strops_u2hex(uint32_t value, char *out) {
         out[2 + i] = hex[nibble];
     }
     out[10] = '\0';
+}
+
+void strops_num2str(int value, char *out) {
+    // assume out has enough size
+
+    int i = value;
+    if(value < 0)i = -value;
+    int digit = 0;
+    while(i) {
+        out[digit++] = (i % 10) + '0';
+        i /= 10;
+    }
+    if(value < 0)out[digit++] = '-';
+    for(int k = 0; k < (digit+1)/2; k++) {
+        char temp = out[k];
+        out[k] = out[digit-1-k];
+        out[digit-1-k] = temp;
+    }
+    out[digit] = '\0';
 }
 
 static int8_t hex_char_to_int(char c) {

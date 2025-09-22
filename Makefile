@@ -67,6 +67,12 @@ matrix-mazha: libs
 	@$(LD) $(LD_OPTS) -T games/matrix-mazha/linker.ld -o kernel.elf obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
 	@$(OBJCOPY) kernel.elf -O binary kernel8.img
 
+space-invaders: libs
+	@$(AS) -c games/space-invaders/boot.S -o obj/boot.o
+	@$(CC) $(CC_OPTS) -c games/space-invaders/kernel.c -o obj/kernel.o
+	@$(LD) $(LD_OPTS) -T games/space-invaders/linker.ld -o kernel.elf obj/kernel.o obj/boot.o lib/libhw.a -Map kernel.map
+	@$(OBJCOPY) kernel.elf -O binary kernel8.img
+
 flash:
 	@$(CP) kernel8.img G:\embedded-dev\rpishare\kernel8.img
 

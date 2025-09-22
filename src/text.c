@@ -3,6 +3,7 @@
 #include "dma.h"
 #include "text.h"
 #include "colors.h"
+#include "strops.h"
 #include "printf.h"
 
 /* ============================== */
@@ -6615,6 +6616,19 @@ void text_get_font_dimensions(font_e f, int* glyph_w, int* glyph_h) {
     } else if(f == SHREE) {
         *glyph_h = SHREE_GLYPH_HEIGHT;
         *glyph_w = SHREE_GLYPH_WIDTH;
+    } else {
+        return;
+    }
+}
+
+void text_get_dimensions(const char *str, font_e f, int* w, int* h) {
+    int len = strops_len(str);
+    if(f == ROBOTO_MONO) {
+        *h = ROBOTOMONO_REGULAR_GLYPH_HEIGHT;
+        *w = ROBOTOMONO_REGULAR_GLYPH_WIDTH * len;
+    } else if(f == SHREE) {
+        *h = SHREE_GLYPH_HEIGHT;
+        *w = SHREE_GLYPH_WIDTH * len;
     } else {
         return;
     }
