@@ -135,6 +135,24 @@ void init_lives(void) {
 
 }
 
+void print_game_over(int won) {
+    int t_w, t_h;
+    char* won_str = "WON  !!";
+    char* lost_str = "LOST !!";
+    text_get_dimensions("GAME OVER !! YOU XXXX !!", ROBOTO_MONO, &t_w, &t_h);
+    char s[30];
+    strops_copy(s, "GAME OVER !! YOU ");
+    if(won) {
+        strops_copy(s+17, won_str);
+    } else {
+        strops_copy(s+17, lost_str);
+    }
+    int x = (disp_w - t_w)/2;
+    int y = (disp_h - t_h)/2;
+    text_draw_str(x, y, s, ROBOTO_MONO, 0, CSS_CYAN);
+    gfx_update_display();
+}
+
 void update_score(int score) {
     char temp[10];
     g_score += score;
@@ -219,11 +237,17 @@ void draw_loop(void) {
             fleet_dir = 1;
             fleet_y_inc = 1;
         }
+        int active_alien_count = 0;
+        int max_active_alien_y = 0;
         for(int i = 0; i < alien_count; i++) {
             if(g_aliens[i].buffer != NULL) {
+                active_alien_count++;
                 g_aliens[i].xpos += (fleet_dir * 4);
                 if(fleet_y_inc) {
                     g_aliens[i].ypos += 5;
+                }
+                if(g_aliens[i].ypos > max_active_alien_y) {
+                    max_active_alien_y = g_aliens[i].ypos;
                 }
                 gfx_clear_rect(g_aliens[i].prev_xpos, g_aliens[i].prev_ypos, 
                             g_aliens[i].prev_xpos + g_aliens[i].width,
@@ -251,6 +275,16 @@ void draw_loop(void) {
                 }
                 sprite_put(&g_aliens[i]);
             }
+        }
+
+        if(max_active_alien_y >= g_rocket.ypos) {
+            print_game_over(0);
+            break;
+        }
+        
+        if(active_alien_count == 0) {
+            print_game_over(1);
+            break;
         }
         
         if(fleet_y_inc) fleet_y_inc = 0;
